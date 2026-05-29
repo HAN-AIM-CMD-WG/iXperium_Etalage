@@ -1206,7 +1206,8 @@
   left: 50%;
   top: 50%;
   z-index: 2;
-  width: clamp(24rem, 34vw, 36rem);
+  /* Groter formaat zodat de foto's beter tot hun recht komen. */
+  width: clamp(32rem, 46vw, 52rem);
   max-width: 100%;
   aspect-ratio: 4 / 3;
   isolation: isolate;
@@ -1258,19 +1259,21 @@
 }
 
 .kiosk-detail-planet--has-image {
-  /* Image is nu de achtergrond — geen glas-bg meer + geen backdrop-filter.
-     Compositor wint hier veel terug: backdrop-filter over een SVG-zware
-     nebula achtergrond is per-frame duur. */
-  background: rgba(5, 8, 23, 0.55);
+  /* Image is nu de achtergrond — geen glas-bg meer + geen backdrop-filter. */
+  background: #05080f;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 
+/* Geen kleur-overlay meer over de foto. Label krijgt eigen text-shadow
+   voor leesbaarheid; ::before pseudo wordt onzichtbaar gemaakt. */
 .kiosk-detail-planet--has-image::before {
-  z-index: 2;
-  background:
-    linear-gradient(180deg, rgba(5, 8, 23, 0.05) 0%, rgba(5, 8, 23, 0.22) 44%, rgba(5, 8, 23, 0.86) 100%),
-    radial-gradient(ellipse at 18% 12%, var(--kiosk-accent-glow, rgba(70, 180, 105, 0.28)), transparent 48%);
+  display: none;
+}
+
+/* Inset border (::after) gaat ook weg bij foto — geen randje over het beeld. */
+.kiosk-detail-planet--has-image::after {
+  display: none;
 }
 
 /* Bij aanwezige foto: alle decoratieve drift-lagen verbergen.
@@ -1404,6 +1407,10 @@
   transform: none;
   align-items: flex-start;
   text-align: left;
+  /* Sterke text-shadow per letter zodat de label leesbaar blijft op alle
+     foto's zonder dat we een gradient-overlay over de foto hoeven te
+     leggen. drop-shadow filter is GPU-composited. */
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 18px rgba(0, 0, 0, 0.6));
 }
 
 /* Eyebrow: kleine caps, accent kleur, subtiele tracking */
