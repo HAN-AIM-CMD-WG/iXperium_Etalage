@@ -963,6 +963,10 @@
     radial-gradient(circle at 52% 42%, rgba(23, 54, 209, 0.24), transparent 32%),
     linear-gradient(135deg, #040717 0%, #07112a 45%, #12071f 100%);
   pointer-events: none;
+  /* Paint isolation: 100+ CSS animaties binnen deze backdrop mogen geen
+     invalidations triggeren in andere DOM (kiosk-detail-planet, panel etc.) */
+  contain: layout style paint;
+  transform: translateZ(0);
 }
 
 .kiosk-nebula-backdrop__svg {
@@ -972,6 +976,9 @@
   height: 114%;
   transform-origin: center;
   animation: kiosk-nebula-camera 42s ease-in-out infinite;
+  /* Eigen GPU-laag voor de camera-drift, voorkomt re-paint van de hele
+     backdrop bij elke frame van de camera-bewegings-keyframe. */
+  will-change: transform;
 }
 
 .kiosk-nebula-backdrop__void {
@@ -1251,23 +1258,35 @@
 }
 
 .kiosk-detail-planet--has-image {
-  background: rgba(7, 16, 22, 0.44);
+  /* Image is nu de achtergrond — geen glas-bg meer + geen backdrop-filter.
+     Compositor wint hier veel terug: backdrop-filter over een SVG-zware
+     nebula achtergrond is per-frame duur. */
+  background: rgba(5, 8, 23, 0.55);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .kiosk-detail-planet--has-image::before {
   z-index: 2;
   background:
-    linear-gradient(180deg, rgba(5, 8, 23, 0.05) 0%, rgba(5, 8, 23, 0.2) 44%, rgba(5, 8, 23, 0.82) 100%),
+    linear-gradient(180deg, rgba(5, 8, 23, 0.05) 0%, rgba(5, 8, 23, 0.22) 44%, rgba(5, 8, 23, 0.86) 100%),
     radial-gradient(ellipse at 18% 12%, var(--kiosk-accent-glow, rgba(70, 180, 105, 0.28)), transparent 48%);
 }
 
+/* Bij aanwezige foto: alle decoratieve drift-lagen verbergen.
+   mix-blend-mode: screen × 7 lagen + per-frame drift = veel compositor
+   re-blends. Foto is visueel hero genoeg. */
 .kiosk-detail-planet--has-image .kiosk-detail-planet__field,
-.kiosk-detail-planet--has-image .kiosk-detail-planet__crater {
-  opacity: 0.16;
+.kiosk-detail-planet--has-image .kiosk-detail-planet__crater,
+.kiosk-detail-planet--has-image .kiosk-detail-planet__shine {
+  display: none;
 }
 
-.kiosk-detail-planet--has-image .kiosk-detail-planet__shine {
-  opacity: 0.28;
+/* Soepele crossfade bij foto-wissel — CSS transition op opacity is
+   GPU-composited en stutter-vrij. */
+.kiosk-detail-planet img {
+  transition: opacity 0.45s ease-out;
+  will-change: opacity;
 }
 
 .kiosk-detail-planet__field,

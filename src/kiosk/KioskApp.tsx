@@ -29,7 +29,11 @@ interface OrbitItem {
 
 const mainByTheme = new Map(contentData.map((node) => [node.theme, node]));
 
-const NEBULA_STAR_COUNT = 92;
+// Aantal sterren met permanent draaiende CSS-animaties. Was 92 -- elke ster
+// is een continu opacity+scale animatie, dus 92 simultane animation ticks
+// per frame. Verlaagd voor minder animation-engine load (glitchy bij hoog
+// volume). Sub-set is visueel nog steeds rijk genoeg.
+const NEBULA_STAR_COUNT = 38;
 const NEBULA_STARS = Array.from({ length: NEBULA_STAR_COUNT }, (_, index) => {
   const xSeed = Math.sin(index * 19.47 + 3.2) * 10000;
   const ySeed = Math.sin(index * 33.91 + 8.7) * 10000;
@@ -471,10 +475,13 @@ export function KioskApp() {
           <motion.section
             key={viewKey}
             className="kiosk-detail-layout"
-            initial={{ opacity: 0, y: 26, scale: 0.985 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -24, scale: 0.985 }}
-            transition={{ duration: 0.52, ease: 'easeOut' }}
+            // Alleen opacity animeren — y + scale dwingen elk frame een
+            // re-composit van de hele layout-section met z'n zware kinderen.
+            // Crossfade is visueel even soepel en aanzienlijk goedkoper.
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
           >
             <div className="kiosk-detail-planet-zone">
               <KioskDetailPlanet node={displayNode} mode={mode} accentColor={accentColor} />
