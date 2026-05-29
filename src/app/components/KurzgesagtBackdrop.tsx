@@ -776,6 +776,16 @@ function TwinkleStar({
       }}
     >
       <div
+        className="kurzgesagt-twinkle-star__glow"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: color,
+          clipPath:
+            'polygon(50% 0%, 55% 45%, 100% 50%, 55% 55%, 50% 100%, 45% 55%, 0% 50%, 45% 45%)',
+        }}
+      />
+      <div
         className="kurzgesagt-twinkle-star__shape"
         style={{
           position: 'absolute',
@@ -783,7 +793,6 @@ function TwinkleStar({
           background: color,
           clipPath:
             'polygon(50% 0%, 55% 45%, 100% 50%, 55% 55%, 50% 100%, 45% 55%, 0% 50%, 45% 45%)',
-          filter: `drop-shadow(0 0 ${size * 0.45}px ${color})`,
         }}
       />
     </div>
@@ -896,7 +905,7 @@ function ShootingStar({
         }}
         animate={{
           background: `linear-gradient(90deg, ${color}00 0%, ${color}40 55%, ${color}ff 92%, #FFFFFFff 100%)`,
-          filter: `drop-shadow(0 0 6px ${color})`,
+          boxShadow: `0 0 6px ${color}`,
         }}
         transition={COLOR_TRANSITION}
       />
@@ -1030,16 +1039,14 @@ export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
   }), [planetColor]);
   const isKiosk = surface === 'kiosk';
 
-  // Stars & dots zijn seeded per theme zodat ze licht variëren bij planet-change
-  // maar stabiel blijven binnen één theme.
+  // Stars & dots blijven stabiel over theme-wissels heen. Alleen de kleuren
+  // crossfaden mee, zodat lopende pulse/twinkle animaties niet opnieuw mounten.
   const { twinkles, pulses, staticField, diskDots } = useMemo(() => {
-    const seed = theme
-      .split('')
-      .reduce((acc, char) => acc + char.charCodeAt(0), 1);
+    const seed = 73;
     const rand = seededRandom(seed);
 
     const twinkleList = Array.from({ length: 12 }, (_, i) => ({
-      id: `tw-${theme}-${i}`,
+      id: `tw-${i}`,
       x: rand() * 100,
       y: rand() * 100,
       size: 12 + rand() * 22,
@@ -1049,7 +1056,7 @@ export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
     }));
 
     const pulseList = Array.from({ length: 28 }, (_, i) => ({
-      id: `pu-${theme}-${i}`,
+      id: `pu-${i}`,
       x: rand() * 100,
       y: rand() * 100,
       size: 2 + rand() * 4,
@@ -1074,7 +1081,7 @@ export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
     const diskDots = generateRingDots(42, DISK_RINGS);
 
     return { twinkles: twinkleList, pulses: pulseList, staticField, diskDots };
-  }, [theme]);
+  }, []);
 
   const starColor = (kind: 'warm' | 'cool' | 'white') =>
     kind === 'warm' ? palette.starWarm : kind === 'cool' ? palette.starCool : palette.starWhite;

@@ -332,9 +332,13 @@ const KioskDetailPlanet = memo(function KioskDetailPlanet({
 
   const title = node ? compactTitle(node.title) : 'iXperium';
   const subtitle = getPlanetMicroCopy(mode);
+  const image = node?.content?.image;
 
   return (
-    <div className="kiosk-detail-planet" style={style}>
+    <div className={`kiosk-detail-planet${image ? ' kiosk-detail-planet--has-image' : ''}`} style={style}>
+      {image ? (
+        <img src={image} alt={node?.title ?? 'iXperium Smart Industry'} loading="eager" />
+      ) : null}
       <span className="kiosk-detail-planet__field kiosk-detail-planet__field--one" />
       <span className="kiosk-detail-planet__field kiosk-detail-planet__field--two" />
       <span className="kiosk-detail-planet__field kiosk-detail-planet__field--three" />

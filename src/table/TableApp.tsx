@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, memo, useRef, type CSSProperties } from 'react';
+import { startTransition, useState, useCallback, useMemo, memo, useRef, type CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { RotateCcw } from 'lucide-react';
 import { contentData, type ContentNode } from '../shared/content';
@@ -529,8 +529,10 @@ export function TableApp() {
     if (now - focusThrottleRef.current < 50) return;
     focusThrottleRef.current = now;
 
-    setCurrentTheme(node.theme);
-    setNearestPlanet(node);
+    startTransition(() => {
+      setCurrentTheme(node.theme);
+      setNearestPlanet(node);
+    });
     publishNavigation({
       level: 'main',
       theme: node.theme,

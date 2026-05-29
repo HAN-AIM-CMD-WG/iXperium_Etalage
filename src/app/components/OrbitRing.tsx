@@ -46,6 +46,7 @@ interface RenderedPlanet {
   node: ContentNode;
   x: number;
   y: number;
+  angle: number;
   radius: number;
   scale: number;
   opacity: number;
@@ -183,10 +184,15 @@ function pseudoRandom(seed: number, index: number) {
 const SPRITE_RENDER_RADIUS = 80;
 const SPRITE_PAD = 1.85; // outer halo extends to radius * 1.85
 const SPRITE_SIZE = Math.ceil(SPRITE_RENDER_RADIUS * SPRITE_PAD * 2 + 8); // 304
+const VECTOR_SPRITE_RENDER_RADIUS = 80;
+const VECTOR_SPRITE_PAD = 1.08;
+const VECTOR_SPRITE_SIZE = Math.ceil(VECTOR_SPRITE_RENDER_RADIUS * VECTOR_SPRITE_PAD * 2 + 8);
 
 type SpriteCanvas = HTMLCanvasElement | OffscreenCanvas;
 type PlanetSpriteSet = { halos: SpriteCanvas; body: SpriteCanvas };
 const PLANET_SPRITE_CACHE = new Map<string, PlanetSpriteSet>();
+type VectorPlanetSpriteSet = { body: SpriteCanvas; innerLight: SpriteCanvas };
+const VECTOR_PLANET_SPRITE_CACHE = new Map<string, VectorPlanetSpriteSet>();
 
 function createSpriteCanvas(size: number): SpriteCanvas | null {
   if (typeof OffscreenCanvas !== 'undefined') {
@@ -260,6 +266,65 @@ function getPlanetSprites(color: string): PlanetSpriteSet | null {
 
   const set: PlanetSpriteSet = { halos, body };
   PLANET_SPRITE_CACHE.set(color, set);
+  return set;
+}
+
+function getVectorPlanetSprites(color: string): VectorPlanetSpriteSet | null {
+  const cached = VECTOR_PLANET_SPRITE_CACHE.get(color);
+  if (cached) return cached;
+
+  const body = createSpriteCanvas(VECTOR_SPRITE_SIZE);
+  const innerLightCanvas = createSpriteCanvas(VECTOR_SPRITE_SIZE);
+  if (!body || !innerLightCanvas) return null;
+
+  const bodyCtx = body.getContext('2d') as
+    | CanvasRenderingContext2D
+    | OffscreenCanvasRenderingContext2D
+    | null;
+  const lightCtx = innerLightCanvas.getContext('2d') as
+    | CanvasRenderingContext2D
+    | OffscreenCanvasRenderingContext2D
+    | null;
+  if (!bodyCtx || !lightCtx) return null;
+
+  const cx = VECTOR_SPRITE_SIZE / 2;
+  const cy = VECTOR_SPRITE_SIZE / 2;
+  const radius = VECTOR_SPRITE_RENDER_RADIUS;
+
+  bodyCtx.save();
+  bodyCtx.beginPath();
+  bodyCtx.arc(cx, cy, radius, 0, TAU);
+  bodyCtx.clip();
+  const bodyGradient = bodyCtx.createLinearGradient(cx - radius, cy - radius * 0.12, cx + radius, cy + radius * 0.1);
+  bodyGradient.addColorStop(0, mixRgba(color, { r: 48, g: 0, b: 96 }, 0.44, 1));
+  bodyGradient.addColorStop(0.46, mixRgba(color, { r: 255, g: 60, b: 150 }, 0.18, 1));
+  bodyGradient.addColorStop(0.78, mixRgba(color, { r: 255, g: 216, b: 48 }, 0.34, 1));
+  bodyGradient.addColorStop(1, mixRgba(color, { r: 255, g: 255, b: 210 }, 0.58, 1));
+  bodyCtx.fillStyle = bodyGradient;
+  bodyCtx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+  bodyCtx.restore();
+
+  lightCtx.save();
+  lightCtx.beginPath();
+  lightCtx.arc(cx, cy, radius, 0, TAU);
+  lightCtx.clip();
+  const innerLight = lightCtx.createRadialGradient(
+    cx + radius * 0.38,
+    cy - radius * 0.32,
+    radius * 0.1,
+    cx + radius * 0.46,
+    cy - radius * 0.36,
+    radius * 1.0,
+  );
+  innerLight.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+  innerLight.addColorStop(0.46, mixRgba(color, { r: 255, g: 255, b: 255 }, 0.4, 0.12));
+  innerLight.addColorStop(1, 'rgba(255, 255, 255, 0)');
+  lightCtx.fillStyle = innerLight;
+  lightCtx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+  lightCtx.restore();
+
+  const set: VectorPlanetSpriteSet = { body, innerLight: innerLightCanvas };
+  VECTOR_PLANET_SPRITE_CACHE.set(color, set);
   return set;
 }
 
@@ -437,6 +502,40 @@ function getPlanetLabelLayout(context: CanvasRenderingContext2D, text: string, r
     lineHeight: minFontSize * 0.96,
     maxLineWidth: 0,
   };
+}
+
+type PlanetLabelLayout = ReturnType<typeof getPlanetLabelLayout>;
+
+const LABEL_LAYOUT_CACHE_LIMIT = 480;
+const LABEL_LAYOUT_CACHE = new Map<string, PlanetLabelLayout>();
+
+function getLabelCacheParts(node: ContentNode, radius: number, scale: number) {
+  return {
+    radiusBucket: Math.round(radius * 2) / 2,
+    scaleBucket: Math.round(scale * 100) / 100,
+    baseKey: `${node.id}|${node.title}|${Math.round(radius * 2) / 2}|${Math.round(scale * 100) / 100}`,
+  };
+}
+
+function getCachedPlanetLabelLayout(
+  context: CanvasRenderingContext2D,
+  node: ContentNode,
+  radius: number,
+  scale: number,
+) {
+  const { radiusBucket, scaleBucket, baseKey } = getLabelCacheParts(node, radius, scale);
+  const cached = LABEL_LAYOUT_CACHE.get(baseKey);
+  if (cached) return cached;
+
+  const layout = getPlanetLabelLayout(context, node.title, radiusBucket, scaleBucket);
+  LABEL_LAYOUT_CACHE.set(baseKey, layout);
+
+  if (LABEL_LAYOUT_CACHE.size > LABEL_LAYOUT_CACHE_LIMIT) {
+    const oldestKey = LABEL_LAYOUT_CACHE.keys().next().value;
+    if (oldestKey) LABEL_LAYOUT_CACHE.delete(oldestKey);
+  }
+
+  return layout;
 }
 
 function drawCentralStyleLabelLine(
@@ -781,14 +880,18 @@ function drawVectorPlanet(
   context.arc(planet.x, planet.y, radius, 0, TAU);
   context.clip();
   context.translate(planet.x, planet.y);
-
-  const bodyGradient = context.createLinearGradient(-radius, -radius * 0.12, radius, radius * 0.1);
-  bodyGradient.addColorStop(0, mixRgba(color, { r: 48, g: 0, b: 96 }, 0.44, 1));
-  bodyGradient.addColorStop(0.46, mixRgba(color, { r: 255, g: 60, b: 150 }, 0.18, 1));
-  bodyGradient.addColorStop(0.78, mixRgba(color, { r: 255, g: 216, b: 48 }, 0.34, 1));
-  bodyGradient.addColorStop(1, mixRgba(color, { r: 255, g: 255, b: 210 }, 0.58, 1));
-  context.fillStyle = bodyGradient;
-  context.fillRect(-radius, -radius, radius * 2, radius * 2);
+  const vectorSpriteSet = getVectorPlanetSprites(color);
+  if (vectorSpriteSet) {
+    context.drawImage(vectorSpriteSet.body, -radius, -radius, radius * 2, radius * 2);
+  } else {
+    const bodyGradient = context.createLinearGradient(-radius, -radius * 0.12, radius, radius * 0.1);
+    bodyGradient.addColorStop(0, mixRgba(color, { r: 48, g: 0, b: 96 }, 0.44, 1));
+    bodyGradient.addColorStop(0.46, mixRgba(color, { r: 255, g: 60, b: 150 }, 0.18, 1));
+    bodyGradient.addColorStop(0.78, mixRgba(color, { r: 255, g: 216, b: 48 }, 0.34, 1));
+    bodyGradient.addColorStop(1, mixRgba(color, { r: 255, g: 255, b: 210 }, 0.58, 1));
+    context.fillStyle = bodyGradient;
+    context.fillRect(-radius, -radius, radius * 2, radius * 2);
+  }
 
   context.rotate(rotation * 0.28);
 
@@ -841,19 +944,23 @@ function drawVectorPlanet(
     );
   }
 
-  const innerLight = context.createRadialGradient(
-    radius * 0.38,
-    -radius * 0.32,
-    radius * 0.1,
-    radius * 0.46,
-    -radius * 0.36,
-    radius * 1.0,
-  );
-  innerLight.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
-  innerLight.addColorStop(0.46, mixRgba(color, { r: 255, g: 255, b: 255 }, 0.4, 0.12));
-  innerLight.addColorStop(1, 'rgba(255, 255, 255, 0)');
-  context.fillStyle = innerLight;
-  context.fillRect(-radius, -radius, radius * 2, radius * 2);
+  if (vectorSpriteSet) {
+    context.drawImage(vectorSpriteSet.innerLight, -radius, -radius, radius * 2, radius * 2);
+  } else {
+    const innerLight = context.createRadialGradient(
+      radius * 0.38,
+      -radius * 0.32,
+      radius * 0.1,
+      radius * 0.46,
+      -radius * 0.36,
+      radius * 1.0,
+    );
+    innerLight.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+    innerLight.addColorStop(0.46, mixRgba(color, { r: 255, g: 255, b: 255 }, 0.4, 0.12));
+    innerLight.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    context.fillStyle = innerLight;
+    context.fillRect(-radius, -radius, radius * 2, radius * 2);
+  }
 
   context.restore();
 
@@ -879,7 +986,7 @@ function drawVectorPlanet(
   context.restore();
 
   if (isFront && visibility > 0.2 && planet.radius > 28) {
-    const layout = getPlanetLabelLayout(context, planet.node.title, planet.radius, planet.scale);
+    const layout = getCachedPlanetLabelLayout(context, planet.node, planet.radius, planet.scale);
     const labelCenterY = planet.y + planet.radius * 0.23;
     const labelWidth = clamp(layout.maxLineWidth, planet.radius * 0.84, planet.radius * 1.48);
 
@@ -1246,6 +1353,7 @@ export const OrbitRing = memo(function OrbitRing({
         existing.node = node;
         existing.x = x;
         existing.y = y;
+        existing.angle = normalizedAngle;
         existing.radius = radius;
         existing.scale = scale;
         existing.opacity = opacity;
@@ -1253,7 +1361,7 @@ export const OrbitRing = memo(function OrbitRing({
         existing.frontVisibility = frontVisibility;
         existing.backVisibility = backVisibility;
       } else {
-        planets[index] = { node, x, y, radius, scale, opacity, depth, frontVisibility, backVisibility };
+        planets[index] = { node, x, y, angle: normalizedAngle, radius, scale, opacity, depth, frontVisibility, backVisibility };
       }
     }
 
@@ -1270,9 +1378,7 @@ export const OrbitRing = memo(function OrbitRing({
       drawPlanet(frontContext, planet, 'front', planet.frontVisibility, animTime);
 
       if (shouldCheckFocus) {
-        const nodeAngle = Math.atan2((planet.y - centerY) / orbitRadiusY, (planet.x - centerX) / orbitRadiusX);
-        const normalizedAngle = normalizeAngle(nodeAngle);
-        let diff = Math.abs(normalizedAngle - targetAngle);
+        let diff = Math.abs(planet.angle - targetAngle);
         if (diff > Math.PI) diff = TAU - diff;
 
         if (diff < smallestDiff) {
@@ -1331,6 +1437,7 @@ export const OrbitRing = memo(function OrbitRing({
 
     let width = 0;
     let height = 0;
+    lastFrameTimeRef.current = 0;
 
     const updateLayoutMetrics = () => {
       // Eén keer per resize (en window resize) lezen we de DOM-rect; per frame

@@ -320,6 +320,9 @@
 
 .kurzgesagt-backdrop {
   color: #fff2b8;
+  contain: paint;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .kurzgesagt-disk-dot {
@@ -336,10 +339,16 @@
   will-change: transform, opacity;
 }
 
-.kurzgesagt-twinkle-star__shape {
+.kurzgesagt-twinkle-star__shape,
+.kurzgesagt-twinkle-star__glow {
   transition:
     background 1.8s cubic-bezier(0.22, 1, 0.36, 1),
-    filter 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kurzgesagt-twinkle-star__glow {
+  opacity: 0.34;
+  transform: scale(1.75);
 }
 
 .kurzgesagt-pulse-dot {
@@ -1241,6 +1250,26 @@
   object-fit: cover;
 }
 
+.kiosk-detail-planet--has-image {
+  background: rgba(7, 16, 22, 0.44);
+}
+
+.kiosk-detail-planet--has-image::before {
+  z-index: 2;
+  background:
+    linear-gradient(180deg, rgba(5, 8, 23, 0.05) 0%, rgba(5, 8, 23, 0.2) 44%, rgba(5, 8, 23, 0.82) 100%),
+    radial-gradient(ellipse at 18% 12%, var(--kiosk-accent-glow, rgba(70, 180, 105, 0.28)), transparent 48%);
+}
+
+.kiosk-detail-planet--has-image .kiosk-detail-planet__field,
+.kiosk-detail-planet--has-image .kiosk-detail-planet__crater {
+  opacity: 0.16;
+}
+
+.kiosk-detail-planet--has-image .kiosk-detail-planet__shine {
+  opacity: 0.28;
+}
+
 .kiosk-detail-planet__field,
 .kiosk-detail-planet__crater,
 .kiosk-detail-planet__shine {
@@ -1347,6 +1376,17 @@
   text-align: center;
 }
 
+.kiosk-detail-planet--has-image .kiosk-detail-planet__label {
+  left: 1.75rem;
+  right: 1.75rem;
+  bottom: 1.65rem;
+  top: auto;
+  width: auto;
+  transform: none;
+  align-items: flex-start;
+  text-align: left;
+}
+
 /* Eyebrow: kleine caps, accent kleur, subtiele tracking */
 .kiosk-detail-planet__label p {
   color: var(--kiosk-accent-light, #fff2b8);
@@ -1374,6 +1414,11 @@
   overflow-wrap: anywhere;
 }
 
+.kiosk-detail-planet--has-image .kiosk-detail-planet__label h2 {
+  max-width: 28rem;
+  font-size: clamp(1.8rem, 2.8vw, 3rem);
+}
+
 /* Subtitel: rustig, lager contrast, geen kapitalen */
 .kiosk-detail-planet__label span {
   display: block;
@@ -1387,6 +1432,11 @@
   line-height: 1.3;
   letter-spacing: 0.02em;
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.32);
+}
+
+.kiosk-detail-planet--has-image .kiosk-detail-planet__label span {
+  max-width: 18rem;
+  margin-top: 0.7rem;
 }
 
 .kiosk-detail-panel {
@@ -1933,6 +1983,16 @@
 
   .kiosk-detail-planet {
     width: min(84vw, 24rem);
+  }
+
+  .kiosk-detail-planet--has-image .kiosk-detail-planet__label {
+    left: 1.15rem;
+    right: 1.15rem;
+    bottom: 1.05rem;
+  }
+
+  .kiosk-detail-planet--has-image .kiosk-detail-planet__label h2 {
+    font-size: clamp(1.45rem, 7vw, 2.1rem);
   }
 
   .kiosk-topic-orbit {
