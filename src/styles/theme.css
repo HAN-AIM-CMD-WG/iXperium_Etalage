@@ -1,0 +1,2181 @@
+@custom-variant dark (&:is(.dark *));
+
+@keyframes orbit-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -5px, 0);
+  }
+}
+
+@keyframes kurzgesagt-disk-dot-pulse {
+  0% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+
+  25% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+
+  75% {
+    opacity: 0.9;
+    transform: scale(1.15);
+  }
+
+  100% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes kurzgesagt-twinkle-pulse {
+  0% {
+    opacity: 0.15;
+    transform: scale(0.7);
+  }
+
+  25% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.9);
+  }
+
+  75% {
+    opacity: 0.9;
+    transform: scale(1.15);
+  }
+
+  100% {
+    opacity: 0.2;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes kurzgesagt-pulse-dot {
+  0% {
+    opacity: calc(var(--pulse-opacity) * 0.3);
+    transform: scale(0.8);
+  }
+
+  25% {
+    opacity: var(--pulse-opacity);
+    transform: scale(1.25);
+  }
+
+  50% {
+    opacity: calc(var(--pulse-opacity) * 0.2);
+    transform: scale(0.9);
+  }
+
+  75% {
+    opacity: calc(var(--pulse-opacity) * 0.9);
+    transform: scale(1.1);
+  }
+
+  100% {
+    opacity: calc(var(--pulse-opacity) * 0.3);
+    transform: scale(0.8);
+  }
+}
+
+@keyframes kurzgesagt-central-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  25% {
+    transform: translate3d(0, -10px, 0) rotate(1.5deg);
+  }
+
+  50% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  75% {
+    transform: translate3d(0, 6px, 0) rotate(-1.5deg);
+  }
+}
+
+@keyframes kurzgesagt-central-field-dark {
+  0%,
+  100% {
+    transform: translateX(0%) rotate(-8deg);
+  }
+
+  33% {
+    transform: translateX(5%) rotate(-2deg);
+  }
+
+  66% {
+    transform: translateX(-2%) rotate(-12deg);
+  }
+}
+
+@keyframes kurzgesagt-central-field-mid {
+  0%,
+  100% {
+    transform: translateX(0%) rotate(6deg);
+  }
+
+  33% {
+    transform: translateX(-4%) rotate(10deg);
+  }
+
+  66% {
+    transform: translateX(3%) rotate(2deg);
+  }
+}
+
+@keyframes kurzgesagt-central-field-light {
+  0%,
+  100% {
+    transform: translateX(0%) rotate(-4deg);
+  }
+
+  33% {
+    transform: translateX(3%) rotate(-8deg);
+  }
+
+  66% {
+    transform: translateX(-4%) rotate(0deg);
+  }
+}
+
+@keyframes kurzgesagt-central-crater-one {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  33% {
+    transform: scale(1.08);
+  }
+
+  66% {
+    transform: scale(0.96);
+  }
+}
+
+@keyframes kurzgesagt-central-crater-two {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  33% {
+    transform: scale(0.95);
+  }
+
+  66% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes kurzgesagt-central-crater-three {
+  0%,
+  100% {
+    transform: translateX(0%);
+  }
+
+  50% {
+    transform: translateX(12%);
+  }
+
+  75% {
+    transform: translateX(-5%);
+  }
+}
+
+@keyframes kurzgesagt-central-atmosphere {
+  0%,
+  100% {
+    opacity: 0.42;
+  }
+
+  33% {
+    opacity: 0.62;
+  }
+
+  66% {
+    opacity: 0.48;
+  }
+}
+
+@keyframes kurzgesagt-central-rim {
+  0%,
+  100% {
+    opacity: 0.9;
+    transform: translateY(0%) rotate(6deg);
+  }
+
+  33% {
+    opacity: 1;
+    transform: translateY(-2%) rotate(6deg);
+  }
+
+  66% {
+    opacity: 0.86;
+    transform: translateY(2%) rotate(6deg);
+  }
+}
+
+@keyframes kurzgesagt-central-spark-one {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.8);
+  }
+
+  33% {
+    opacity: 0.58;
+    transform: scale(1.1);
+  }
+
+  66% {
+    opacity: 0.22;
+    transform: scale(0.9);
+  }
+}
+
+@keyframes kurzgesagt-central-spark-two {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: scale(1);
+  }
+
+  33% {
+    opacity: 0.7;
+    transform: scale(0.86);
+  }
+
+  66% {
+    opacity: 0.2;
+    transform: scale(1.12);
+  }
+}
+
+@keyframes kurzgesagt-nebula-strip-slide {
+  from {
+    transform: translate3d(var(--strip-start), 0, 0);
+  }
+
+  to {
+    transform: translate3d(var(--strip-end), 0, 0);
+  }
+}
+
+@keyframes kurzgesagt-nebula-cluster-drift {
+  0%,
+  100% {
+    transform: translate3d(-50%, -50%, 0) translateY(0) rotate(var(--cluster-rotate));
+  }
+
+  25% {
+    transform: translate3d(-50%, -50%, 0) translateY(-10px) rotate(var(--cluster-rotate-pos));
+  }
+
+  50% {
+    transform: translate3d(-50%, -50%, 0) translateY(0) rotate(var(--cluster-rotate));
+  }
+
+  75% {
+    transform: translate3d(-50%, -50%, 0) translateY(8px) rotate(var(--cluster-rotate-neg));
+  }
+}
+
+@keyframes kurzgesagt-moon-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  25% {
+    transform: translate3d(0, var(--moon-y-pos), 0) rotate(var(--moon-rotate-pos));
+  }
+
+  50% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  75% {
+    transform: translate3d(0, var(--moon-y-neg), 0) rotate(var(--moon-rotate-neg));
+  }
+}
+
+.kurzgesagt-backdrop {
+  color: #fff2b8;
+}
+
+.kurzgesagt-disk-dot {
+  animation-name: kurzgesagt-disk-dot-pulse;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  transition: fill 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kurzgesagt-twinkle-star {
+  animation-name: kurzgesagt-twinkle-pulse;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+.kurzgesagt-twinkle-star__shape {
+  transition:
+    background 1.8s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kurzgesagt-pulse-dot {
+  animation-name: kurzgesagt-pulse-dot;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  transition:
+    background-color 1.8s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity;
+}
+
+.kurzgesagt-nebula-strip__track {
+  animation: kurzgesagt-nebula-strip-slide var(--strip-duration) linear infinite;
+  will-change: transform;
+}
+
+.kurzgesagt-nebula-strip__cluster {
+  animation: kurzgesagt-nebula-cluster-drift var(--cluster-duration) linear infinite;
+  animation-delay: var(--cluster-delay);
+  will-change: transform;
+}
+
+.kurzgesagt-cloud-nebula {
+  display: block;
+  overflow: visible;
+}
+
+.kurzgesagt-cloud-nebula__shape {
+  transition:
+    fill 1.8s cubic-bezier(0.22, 1, 0.36, 1),
+    stroke 1.8s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  vector-effect: non-scaling-stroke;
+}
+
+.kurzgesagt-cloud-nebula__stop {
+  transition: stop-color 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kurzgesagt-moon,
+.kurzgesagt-central-planet {
+  position: absolute;
+}
+
+.kurzgesagt-moon {
+  width: clamp(7rem, 11vw, 12rem);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-width: 6px;
+  border-style: solid;
+  border-radius: 999px;
+  /* box-shadow geeft de moon een subtiele gloed — kleur wordt per-theme
+     via inline style gezet op de parent (borderColor = palette.ink). */
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.35), 0 0 24px rgba(255, 255, 255, 0.08);
+  animation: kurzgesagt-moon-drift var(--moon-duration) linear infinite;
+  transition:
+    background-color 1.8s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.kurzgesagt-moon span {
+  position: absolute;
+  display: block;
+  border-width: 4px;
+  border-style: solid;
+  border-color: inherit;
+  border-radius: 999px;
+  transition:
+    background-color 1.8s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kurzgesagt-moon span:first-child {
+  left: -8%;
+  top: 22%;
+  width: 58%;
+  height: 24%;
+}
+
+.kurzgesagt-moon span:last-child {
+  right: 13%;
+  bottom: 16%;
+  width: 30%;
+  height: 30%;
+}
+
+.kurzgesagt-moon--left {
+  left: clamp(1rem, 7vw, 8rem);
+  top: clamp(5rem, 13vh, 9rem);
+}
+
+.kurzgesagt-moon--right {
+  right: clamp(1rem, 8vw, 9rem);
+  bottom: clamp(5rem, 12vh, 9rem);
+}
+
+.kurzgesagt-central-planet {
+  --kg-central-size: clamp(17.5rem, 32.5vw, 26.5rem);
+  left: calc(50% - var(--kg-central-size) / 2);
+  top: calc(50% - var(--kg-central-size) / 2);
+  z-index: 50;
+  width: var(--kg-central-size);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 8px solid;
+  border-radius: 999px;
+  isolation: isolate;
+  contain: paint;
+  clip-path: circle(50% at 50% 50%);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 0 98.7%, transparent 100%);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-image: radial-gradient(circle at 50% 50%, #000 0 98.7%, transparent 100%);
+  mask-repeat: no-repeat;
+  mask-size: 100% 100%;
+  transition:
+    background 1.8s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 1.8s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: kurzgesagt-central-float 9s linear infinite;
+  will-change: transform;
+}
+
+.kurzgesagt-central-planet__field,
+.kurzgesagt-central-planet__crater,
+.kurzgesagt-central-planet__atmosphere,
+.kurzgesagt-central-planet__rim,
+.kurzgesagt-central-planet__spark,
+.kurzgesagt-central-planet__patch {
+  position: absolute;
+  display: block;
+}
+
+.kurzgesagt-central-planet__field {
+  z-index: 1;
+  border-radius: 999px;
+  transition: background-color 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kurzgesagt-central-planet__field--dark {
+  left: -18%;
+  top: -8%;
+  width: 56%;
+  height: 112%;
+  opacity: 0.96;
+  animation: kurzgesagt-central-field-dark 15s linear infinite;
+}
+
+.kurzgesagt-central-planet__field--mid {
+  left: 22%;
+  top: -12%;
+  width: 54%;
+  height: 124%;
+  opacity: 0.92;
+  animation: kurzgesagt-central-field-mid 18s linear infinite;
+}
+
+.kurzgesagt-central-planet__field--light {
+  right: -15%;
+  top: -4%;
+  width: 46%;
+  height: 108%;
+  opacity: 0.96;
+  animation: kurzgesagt-central-field-light 20s linear infinite;
+}
+
+.kurzgesagt-central-planet__crater {
+  z-index: 2;
+  border-radius: 999px;
+  opacity: 0.72;
+  transition: background-color 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kurzgesagt-central-planet__crater--one {
+  left: 18%;
+  top: 18%;
+  width: 26%;
+  height: 26%;
+  animation: kurzgesagt-central-crater-one 11s linear infinite;
+}
+
+.kurzgesagt-central-planet__crater--two {
+  right: 15%;
+  top: 38%;
+  width: 24%;
+  height: 28%;
+  animation: kurzgesagt-central-crater-two 13s linear infinite;
+}
+
+.kurzgesagt-central-planet__crater--three {
+  left: 34%;
+  bottom: 19%;
+  width: 16%;
+  height: 18%;
+  animation: kurzgesagt-central-crater-three 17s linear infinite;
+}
+
+.kurzgesagt-central-planet__atmosphere {
+  inset: 0;
+  z-index: 3;
+  transition: background 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: kurzgesagt-central-atmosphere 8s linear infinite;
+}
+
+.kurzgesagt-central-planet__rim {
+  right: 4%;
+  top: 12%;
+  z-index: 5;
+  width: clamp(1.3rem, 2.7vw, 2.45rem);
+  height: 72%;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 999px;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.22);
+  animation: kurzgesagt-central-rim 7s linear infinite;
+}
+
+.kurzgesagt-central-planet__spark {
+  z-index: 4;
+  width: 10%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.kurzgesagt-central-planet__spark--one {
+  right: 23%;
+  top: 17%;
+  animation: kurzgesagt-central-spark-one 5s linear infinite;
+}
+
+.kurzgesagt-central-planet__spark--two {
+  right: 35%;
+  bottom: 23%;
+  width: 7%;
+  animation: kurzgesagt-central-spark-two 6.5s linear infinite;
+}
+
+.kurzgesagt-central-planet__patch {
+  border-width: 5px;
+  border-style: solid;
+}
+
+.kurzgesagt-central-planet__patch--cool {
+  left: -10%;
+  top: 20%;
+  width: 58%;
+  height: 24%;
+  transform: rotate(-18deg);
+  border-radius: 999px;
+}
+
+.kurzgesagt-central-planet__patch--warm {
+  right: -6%;
+  top: 48%;
+  width: 52%;
+  height: 20%;
+  transform: rotate(17deg);
+  border-radius: 999px;
+}
+
+.kurzgesagt-central-planet__patch--pink {
+  left: 32%;
+  bottom: 8%;
+  width: 30%;
+  height: 22%;
+  border-radius: 999px 999px 40% 40%;
+}
+
+.kurzgesagt-central-planet__ring {
+  position: absolute;
+  left: -20%;
+  top: 45%;
+  z-index: 4;
+  width: 140%;
+  height: 22%;
+  transform: rotate(-10deg);
+  border: 5px solid;
+  border-radius: 999px;
+  opacity: 0.58;
+  transition: border-color 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kurzgesagt-dot-field {
+  position: absolute;
+  inset: 0;
+  opacity: 0.18;
+  background-position: 0 0;
+  background-size: 84px 84px;
+  /* background-image wordt inline gezet door de backdrop zodat de dot
+     kleur meegaat met het actieve theme palette. */
+}
+
+.kurzgesagt-nebula-strip {
+  /* contain paint zodat de browser het strip-gedeelte als zelfstandige
+     compositor-laag kan behandelen — voorkomt reflow tijdens sliding. */
+  contain: paint;
+}
+
+[data-visual-style='kurzgesagt'] {
+  background: #1736d1;
+}
+
+[data-visual-style='kurzgesagt'] .visual-style-toggle,
+[data-visual-style='kurzgesagt'] .connection-pill,
+[data-visual-style='kurzgesagt'] .navigation-button {
+  border: 4px solid #07185f;
+  background: #fff2b8;
+  color: #07185f;
+  box-shadow: 0 7px 0 #07185f;
+  backdrop-filter: none;
+}
+
+[data-visual-style='kurzgesagt'] .visual-style-toggle:hover,
+[data-visual-style='kurzgesagt'] .navigation-button:hover {
+  background: #ffd400;
+}
+
+[data-visual-style='kurzgesagt'] .app-branding h1,
+[data-visual-style='kurzgesagt'] .table-title,
+[data-visual-style='kurzgesagt'] .kiosk-title {
+  color: #fff2b8;
+  letter-spacing: 0;
+  text-shadow: 4px 4px 0 #07185f;
+}
+
+[data-visual-style='kurzgesagt'] .app-branding p,
+[data-visual-style='kurzgesagt'] .table-help,
+[data-visual-style='kurzgesagt'] .table-eyebrow,
+[data-visual-style='kurzgesagt'] .kiosk-eyebrow,
+[data-visual-style='kurzgesagt'] .kiosk-copy {
+  color: #fff2b8;
+  letter-spacing: 0;
+  text-shadow: 2px 2px 0 #07185f;
+}
+
+[data-visual-style='kurzgesagt'] .central-planet-label {
+  isolation: isolate;
+  max-width: min(22rem, 42vw);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #07185f;
+  box-shadow: none;
+  filter: drop-shadow(0 4px 0 rgba(7, 24, 95, 0.35));
+}
+
+[data-visual-style='kurzgesagt'] .central-planet-label p,
+[data-visual-style='kurzgesagt'] .central-planet-label h1,
+[data-visual-style='kurzgesagt'] .central-planet-label h2 {
+  color: var(--central-text, #07185f);
+  letter-spacing: 0;
+  text-shadow:
+    0 1px 0 var(--central-highlight, #fff2b8),
+    0 0 13px var(--central-glow, rgba(255, 242, 184, 0.5)),
+    3px 4px 0 rgba(7, 24, 95, 0.36);
+}
+
+[data-visual-style='kurzgesagt'] .central-planet-label__title {
+  font-size: clamp(2.25rem, 4.1vw, 3.35rem);
+  line-height: 0.94;
+  -webkit-text-stroke: 1.45px var(--central-highlight, #fff2b8);
+}
+
+[data-visual-style='kurzgesagt'] .central-planet-label__subtitle {
+  color: var(--central-secondary, #07185f);
+  text-shadow:
+    0 1px 0 var(--central-highlight, #fff2b8),
+    0 0 9px var(--central-glow, rgba(255, 242, 184, 0.5)),
+    2px 3px 0 rgba(7, 24, 95, 0.3);
+}
+
+[data-visual-style='kurzgesagt'] .central-planet-label__kicker,
+[data-visual-style='kurzgesagt'] .central-planet-label__footer {
+  font-weight: 900;
+  opacity: 0.86;
+  color: var(--central-secondary, #07185f);
+  -webkit-text-stroke: 0.45px var(--central-highlight, #fff2b8);
+}
+
+[data-visual-style='kurzgesagt'] .central-planet-divider {
+  height: 5px;
+  background: linear-gradient(90deg, transparent, var(--central-accent, #07185f), transparent) !important;
+  border-radius: 999px;
+  box-shadow: 0 2px 0 rgba(7, 24, 95, 0.85);
+}
+
+[data-visual-style='kurzgesagt'] .content-card {
+  border: 6px solid #07185f;
+  border-radius: 0.5rem;
+  box-shadow: 12px 12px 0 #07185f;
+}
+
+[data-visual-style='kurzgesagt'] .content-card-title {
+  color: #fff2b8;
+  letter-spacing: 0;
+  text-shadow: 3px 3px 0 #07185f;
+}
+
+[data-visual-style='kurzgesagt'] .content-card-copy,
+[data-visual-style='kurzgesagt'] .content-card-related h3 {
+  color: #fff2b8;
+  text-shadow: 2px 2px 0 #07185f;
+}
+
+[data-visual-style='kurzgesagt'] .content-card-related {
+  border-color: rgba(7, 24, 95, 0.7);
+}
+
+[data-visual-style='kurzgesagt'] .content-card-chip,
+[data-visual-style='kurzgesagt'] .related-node-button {
+  border: 4px solid #07185f;
+  background: #fff2b8;
+  color: #07185f;
+  box-shadow: 0 5px 0 #07185f;
+  backdrop-filter: none;
+}
+
+[data-visual-style='kurzgesagt'] .related-node-label {
+  color: #07185f;
+  text-shadow: none;
+}
+
+.vector-card-shape {
+  position: absolute;
+  border: 5px solid #07185f;
+  pointer-events: none;
+}
+
+.vector-card-shape--one {
+  right: -2.5rem;
+  top: -2rem;
+  width: 12rem;
+  height: 7rem;
+  transform: rotate(18deg);
+  border-radius: 999px;
+  background: #00d9ff;
+}
+
+.vector-card-shape--two {
+  left: -4rem;
+  bottom: -2rem;
+  width: 13rem;
+  height: 5rem;
+  transform: rotate(-16deg);
+  border-radius: 999px;
+  background: #ffd400;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-main {
+  color: #fff2b8;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-route-card,
+[data-visual-style='kurzgesagt'] .kiosk-topic-row,
+[data-visual-style='kurzgesagt'] .kiosk-chip,
+[data-visual-style='kurzgesagt'] .media-stage {
+  border: 5px solid #07185f;
+  background: #fff2b8;
+  color: #07185f;
+  box-shadow: 8px 8px 0 #07185f;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-route-card {
+  min-height: 8.5rem;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-card-title,
+[data-visual-style='kurzgesagt'] .kiosk-chip,
+[data-visual-style='kurzgesagt'] .kiosk-topic-row .kiosk-copy {
+  color: #07185f;
+  text-shadow: none;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-topic-row {
+  padding: 1.25rem;
+  border-radius: 0.5rem;
+}
+
+.vector-hero-stage,
+.vector-media-stage {
+  border: 6px solid #07185f;
+  background: #fff2b8;
+  box-shadow: 12px 12px 0 #07185f;
+}
+
+.vector-hero-stage__planet,
+.vector-media-stage__planet {
+  position: absolute;
+  border: 7px solid #07185f;
+  border-radius: 999px;
+  background: #ff6a00;
+}
+
+.vector-hero-stage__planet {
+  right: 8%;
+  top: 12%;
+  width: min(32vw, 22rem);
+  aspect-ratio: 1;
+}
+
+.vector-media-stage__planet {
+  left: 50%;
+  top: 50%;
+  width: min(34vw, 18rem);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+}
+
+.vector-hero-stage__orbit,
+.vector-media-stage__shape {
+  position: absolute;
+  border: 6px solid #07185f;
+}
+
+.vector-hero-stage__orbit--one {
+  right: 3%;
+  top: 28%;
+  width: min(42vw, 32rem);
+  height: 7rem;
+  transform: rotate(-17deg);
+  border-color: #00d9ff;
+  border-radius: 999px;
+}
+
+.vector-hero-stage__orbit--two {
+  left: -4rem;
+  bottom: 20%;
+  width: 24rem;
+  height: 7rem;
+  transform: rotate(21deg);
+  border-color: #ff3b9d;
+  border-radius: 999px;
+}
+
+.vector-hero-stage__factory {
+  position: absolute;
+  left: 8%;
+  bottom: 18%;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.8rem;
+}
+
+.vector-hero-stage__factory span {
+  display: block;
+  width: 4rem;
+  border: 5px solid #07185f;
+  border-radius: 0.4rem 0.4rem 0 0;
+  background: #00d9ff;
+}
+
+.vector-hero-stage__factory span:nth-child(1) {
+  height: 8rem;
+}
+
+.vector-hero-stage__factory span:nth-child(2) {
+  height: 12rem;
+  background: #ff3b9d;
+}
+
+.vector-hero-stage__factory span:nth-child(3) {
+  height: 6rem;
+  background: #ffd400;
+}
+
+.vector-media-stage__shape--cool {
+  left: -5%;
+  top: 16%;
+  width: 42%;
+  height: 18%;
+  transform: rotate(-17deg);
+  border-radius: 999px;
+  background: #00d9ff;
+}
+
+.vector-media-stage__shape--warm {
+  right: 4%;
+  top: 18%;
+  width: 24%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: #ffd400;
+}
+
+.vector-media-stage__shape--pink {
+  right: 12%;
+  bottom: 14%;
+  width: 46%;
+  height: 16%;
+  transform: rotate(16deg);
+  border-radius: 999px;
+  background: #ff3b9d;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-stage-title,
+[data-visual-style='kurzgesagt'] .vector-hero-stage .kiosk-eyebrow,
+[data-visual-style='kurzgesagt'] .vector-media-stage .kiosk-copy,
+[data-visual-style='kurzgesagt'] .vector-media-stage .kiosk-eyebrow {
+  color: #07185f;
+  text-shadow: none;
+}
+
+.kiosk-nebula-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 52% 42%, rgba(23, 54, 209, 0.24), transparent 32%),
+    linear-gradient(135deg, #040717 0%, #07112a 45%, #12071f 100%);
+  pointer-events: none;
+}
+
+.kiosk-nebula-backdrop__svg {
+  position: absolute;
+  inset: -7%;
+  width: 114%;
+  height: 114%;
+  transform-origin: center;
+  animation: kiosk-nebula-camera 42s ease-in-out infinite;
+}
+
+.kiosk-nebula-backdrop__void {
+  fill: #020514;
+  opacity: 0.76;
+}
+
+.kiosk-nebula-backdrop__void--lower {
+  opacity: 0.58;
+}
+
+.kiosk-nebula-flow {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+.kiosk-nebula-flow--primary {
+  animation: kiosk-nebula-drift-primary 34s ease-in-out infinite;
+}
+
+.kiosk-nebula-flow--secondary {
+  animation: kiosk-nebula-drift-secondary 46s ease-in-out infinite;
+}
+
+.kiosk-nebula-dust-lane {
+  fill: #050715;
+  opacity: 0.66;
+}
+
+.kiosk-nebula-dust-lane--cool {
+  fill: #070b1f;
+  opacity: 0.62;
+}
+
+.kiosk-nebula-filament {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.34);
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 42 22 8 18;
+  opacity: 0.52;
+  animation: kiosk-nebula-filament-flow 18s linear infinite;
+}
+
+.kiosk-nebula-filament--warm {
+  stroke: var(--nebula-accent-warm, #ffd400);
+  stroke-width: 7;
+  opacity: 0.34;
+  animation-duration: 22s;
+}
+
+.kiosk-nebula-pillars {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kiosk-nebula-pillar-drift 38s ease-in-out infinite;
+}
+
+.kiosk-nebula-star {
+  fill: #ffffff;
+  opacity: 0.55;
+  transform-origin: center;
+  animation: kiosk-nebula-star-pulse 5.6s ease-in-out infinite;
+  animation-delay: var(--star-delay, 0s);
+}
+
+.kiosk-nebula-star:nth-child(3n) {
+  fill: #70f0ff;
+}
+
+.kiosk-nebula-star:nth-child(5n) {
+  fill: var(--nebula-accent-warm, #ffd400);
+}
+
+.kiosk-nebula-sparkles {
+  fill: rgba(255, 255, 255, 0.58);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kiosk-nebula-sparkle-drift 24s ease-in-out infinite;
+}
+
+.kiosk-detail-layout {
+  display: grid;
+  width: min(100%, 96rem);
+  margin: 0 auto;
+  grid-template-columns: minmax(30rem, 0.92fr) minmax(30rem, 1fr);
+  align-items: center;
+  gap: clamp(2rem, 4vw, 4.25rem);
+}
+
+.kiosk-detail-planet-zone {
+  position: relative;
+  min-height: min(63vh, 38rem);
+  overflow: visible;
+  isolation: isolate;
+}
+
+/* Ambient theme-glow achter de planeet — geeft de glasplaten een
+   onderliggende kleurtemperatuur die meeademt met het actieve thema. */
+.kiosk-detail-planet-zone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 50%, var(--kiosk-orbit-glow, rgba(70, 180, 105, 0.32)) 0%, transparent 58%),
+    radial-gradient(ellipse at 28% 18%, rgba(255, 255, 255, 0.06) 0%, transparent 36%);
+  filter: blur(28px);
+  opacity: 0.85;
+}
+
+.kiosk-topic-orbit {
+  position: absolute;
+  inset: 1% 3% -1% 3%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.kiosk-topic-orbit__ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(92%, 39rem);
+  height: min(58%, 21rem);
+  transform: translate(-50%, -50%) rotate(-19deg);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  opacity: 0.78;
+  box-shadow:
+    0 0 60px var(--kiosk-orbit-glow, rgba(70, 180, 105, 0.18)),
+    inset 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.kiosk-topic-orbit__halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 999px;
+  transform: translate(-50%, -50%) rotate(-19deg);
+  pointer-events: none;
+}
+
+.kiosk-topic-orbit__halo--outer {
+  width: min(98%, 41rem);
+  height: min(64%, 23rem);
+  border: 1px dashed rgba(255, 255, 255, 0.10);
+  opacity: 0.7;
+}
+
+.kiosk-topic-orbit__halo--inner {
+  width: min(64%, 28rem);
+  height: min(38%, 14rem);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  opacity: 0.55;
+}
+
+.kiosk-orbit-chip {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  width: clamp(8rem, 9vw, 10.5rem);
+  min-height: 4.4rem;
+  align-items: stretch;
+  gap: 0.85rem;
+  padding: 0.78rem 1rem 0.78rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1.1rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%),
+    rgba(10, 18, 28, 0.46);
+  color: #ffffff;
+  box-shadow:
+    0 22px 60px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translate(-50%, -50%);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+}
+
+.kiosk-orbit-chip[data-front='false'] {
+  z-index: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.01) 100%),
+    rgba(10, 18, 28, 0.32);
+  border-color: rgba(255, 255, 255, 0.06);
+  filter: saturate(0.78) brightness(0.78);
+}
+
+/* Verticale accent-bar in plaats van de oude ronde dot.
+   Blijft dezelfde span in de DOM, alleen anders gestyled. */
+.kiosk-orbit-chip span {
+  display: block;
+  width: 3px;
+  height: auto;
+  align-self: stretch;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--chip-color, #46b469);
+  box-shadow:
+    0 0 14px var(--chip-shadow, rgba(70, 180, 105, 0.5)),
+    0 0 2px var(--chip-color, #46b469);
+}
+
+.kiosk-orbit-chip p {
+  min-width: 0;
+  flex: 1;
+  align-self: center;
+  font-size: clamp(0.72rem, 0.78vw, 0.88rem);
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: 0.005em;
+  color: rgba(255, 255, 255, 0.92);
+  overflow-wrap: anywhere;
+}
+
+/* ============================================================
+   MEDIA PLACEHOLDER - afgeronde rechthoek met dezelfde kaarttaal
+   als het tekstvak ernaast. Later kan hier een afbeelding onder
+   de label-laag worden geplaatst zonder de vorm opnieuw te wijzigen.
+   ============================================================ */
+.kiosk-detail-planet {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: clamp(24rem, 34vw, 36rem);
+  max-width: 100%;
+  aspect-ratio: 4 / 3;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at 0% 0%, var(--kiosk-accent-glow, rgba(70, 180, 105, 0.34)), transparent 38%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
+    rgba(7, 16, 22, 0.64);
+  box-shadow:
+    0 28px 92px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  filter: none;
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  transform: translate(-50%, -50%);
+  animation: kiosk-detail-planet-float 11s ease-in-out infinite;
+}
+
+.kiosk-detail-planet::before {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(5, 8, 23, 0.06) 0%, rgba(5, 8, 23, 0.42) 100%),
+    radial-gradient(ellipse at 50% 45%, transparent 0%, rgba(5, 8, 23, 0.24) 78%);
+  content: '';
+}
+
+.kiosk-detail-planet::after {
+  position: absolute;
+  inset: 1.15rem;
+  z-index: 2;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 1.35rem;
+  content: '';
+}
+
+.kiosk-detail-planet img {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.kiosk-detail-planet__field,
+.kiosk-detail-planet__crater,
+.kiosk-detail-planet__shine {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  will-change: transform, opacity;
+  mix-blend-mode: screen;
+}
+
+/* Zachte placeholder-lagen die het vlak kleur geven zolang er nog geen
+   echte afbeelding beschikbaar is. */
+.kiosk-detail-planet__field {
+  border-radius: inherit;
+  filter: none;
+}
+
+.kiosk-detail-planet__field--one {
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 42%),
+    radial-gradient(ellipse at 22% 18%, var(--kiosk-accent, #46b469) 0%, transparent 58%);
+  opacity: 0.74;
+  animation: kiosk-surface-drift-a 22s ease-in-out infinite;
+}
+
+.kiosk-detail-planet__field--two {
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 86% 14%, var(--kiosk-accent-light, #fff2b8) 0%, transparent 44%),
+    radial-gradient(ellipse at 78% 78%, var(--kiosk-accent-warm, #ffd400) 0%, transparent 52%);
+  opacity: 0.46;
+  animation: kiosk-surface-drift-b 28s ease-in-out infinite;
+}
+
+.kiosk-detail-planet__field--three {
+  inset: auto 0 0 0;
+  height: 62%;
+  background:
+    linear-gradient(0deg, var(--kiosk-accent-deep, #2a1240) 0%, transparent 82%),
+    radial-gradient(ellipse at 18% 90%, var(--kiosk-accent-dark, #07185f) 0%, transparent 62%);
+  opacity: 0.64;
+  animation: kiosk-surface-drift-c 26s ease-in-out infinite;
+}
+
+.kiosk-detail-planet__crater {
+  z-index: 2;
+  border-radius: 999px;
+  filter: blur(22px);
+}
+
+.kiosk-detail-planet__crater--one {
+  left: 12%;
+  top: 16%;
+  width: 34%;
+  height: 24%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.42) 0%, transparent 65%);
+  opacity: 0.72;
+  animation: kiosk-surface-drift-b 19s ease-in-out infinite;
+}
+
+.kiosk-detail-planet__crater--two {
+  right: 7%;
+  bottom: 10%;
+  width: 32%;
+  height: 26%;
+  background: radial-gradient(circle, var(--kiosk-accent-warm, #ffd400) 0%, transparent 70%);
+  opacity: 0.4;
+  animation: kiosk-surface-drift-a 24s ease-in-out infinite;
+}
+
+.kiosk-detail-planet__crater--three {
+  left: 5%;
+  bottom: 2%;
+  width: 28%;
+  height: 26%;
+  background: radial-gradient(circle, var(--kiosk-accent-dark, rgba(94, 130, 255, 0.65)) 0%, transparent 68%);
+  opacity: 0.54;
+  animation: kiosk-surface-drift-c 30s ease-in-out infinite;
+}
+
+.kiosk-detail-planet__shine {
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  background:
+    linear-gradient(112deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.08) 18%, transparent 40%),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.08), transparent 34%);
+  filter: none;
+  opacity: 0.52;
+  transform: none;
+}
+
+.kiosk-detail-planet__label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  display: flex;
+  width: min(82%, 28rem);
+  transform: translate(-50%, -50%);
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* Eyebrow: kleine caps, accent kleur, subtiele tracking */
+.kiosk-detail-planet__label p {
+  color: var(--kiosk-accent-light, #fff2b8);
+  font-size: clamp(0.66rem, 0.78vw, 0.78rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  opacity: 0.9;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.42);
+}
+
+/* Hoofdtitel: refined, geen 3D offset shadow meer.
+   Crisp wit met een zachte accent-glow voor leesbaarheid op het glas. */
+.kiosk-detail-planet__label h2 {
+  margin-top: 0.6rem;
+  color: #ffffff;
+  font-size: clamp(2rem, 3.7vw, 3.65rem);
+  font-weight: 800;
+  line-height: 0.96;
+  letter-spacing: 0;
+  text-shadow:
+    0 2px 16px rgba(0, 0, 0, 0.42),
+    0 0 28px var(--kiosk-accent-glow, rgba(70, 180, 105, 0.32));
+  overflow-wrap: anywhere;
+}
+
+/* Subtitel: rustig, lager contrast, geen kapitalen */
+.kiosk-detail-planet__label span {
+  display: block;
+  max-width: 16rem;
+  margin-top: 0.95rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: clamp(0.78rem, 0.94vw, 0.96rem);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.32);
+}
+
+.kiosk-detail-panel {
+  position: relative;
+  z-index: 4;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at 0% 0%, var(--panel-glow, rgba(70, 180, 105, 0.2)), transparent 36%),
+    rgba(7, 16, 22, 0.64);
+  padding: clamp(1.45rem, 2.1vw, 2.35rem);
+  color: #ffffff;
+  box-shadow: 0 28px 92px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(18px);
+}
+
+.kiosk-detail-shell .visual-style-toggle {
+  right: 8rem;
+  bottom: auto;
+  left: auto;
+  top: 5.25rem;
+}
+
+.kiosk-detail-shell .connection-pill {
+  right: 1.5rem;
+  bottom: auto;
+  top: 1.5rem;
+}
+
+.kiosk-detail-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.4rem;
+}
+
+.kiosk-detail-panel__header p {
+  color: var(--panel-accent, #46b469);
+  font-size: 0.78rem;
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.kiosk-detail-panel__header h1 {
+  max-width: 34rem;
+  margin-top: 0.7rem;
+  color: #ffffff;
+  font-size: clamp(2.3rem, 4vw, 4rem);
+  font-weight: 950;
+  line-height: 0.96;
+  letter-spacing: 0;
+}
+
+.kiosk-detail-panel__header > span {
+  min-width: 8rem;
+  border-radius: 999px;
+  background: var(--panel-accent, #46b469);
+  padding: 0.7rem 1rem;
+  color: #071016;
+  font-size: 0.78rem;
+  font-weight: 950;
+  line-height: 1;
+  text-align: center;
+}
+
+.kiosk-detail-panel__intro {
+  margin-top: 1.5rem;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: clamp(1.15rem, 1.42vw, 1.45rem);
+  font-weight: 800;
+  line-height: 1.36;
+}
+
+.kiosk-detail-panel__body {
+  margin-top: 1rem;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: clamp(0.98rem, 1.1vw, 1.08rem);
+  font-weight: 600;
+  line-height: 1.62;
+}
+
+.kiosk-detail-panel__columns {
+  display: grid;
+  margin-top: 1.6rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.2rem;
+}
+
+.kiosk-detail-panel__columns section {
+  min-width: 0;
+}
+
+.kiosk-detail-panel__columns h2 {
+  color: var(--panel-accent, #46b469);
+  font-size: 0.8rem;
+  font-weight: 950;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.kiosk-detail-panel__columns ul {
+  display: flex;
+  margin-top: 0.8rem;
+  flex-direction: column;
+  gap: 0.58rem;
+}
+
+.kiosk-detail-panel__columns li {
+  position: relative;
+  padding-left: 1.05rem;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.98rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.kiosk-detail-panel__columns li::before {
+  position: absolute;
+  left: 0;
+  top: 0.42rem;
+  width: 0.46rem;
+  height: 0.46rem;
+  border-radius: 999px;
+  background: var(--panel-accent, #46b469);
+  content: '';
+}
+
+.kiosk-signal-strip {
+  display: grid;
+  margin-top: 1.7rem;
+  grid-template-columns: 0.72fr 1.28fr;
+  gap: 0.85rem;
+}
+
+.kiosk-signal-strip div {
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1rem;
+}
+
+.kiosk-signal-strip strong,
+.kiosk-signal-strip span {
+  display: block;
+}
+
+.kiosk-signal-strip strong {
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 950;
+  line-height: 1.1;
+}
+
+.kiosk-signal-strip span {
+  margin-top: 0.25rem;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 0.73rem;
+  font-weight: 850;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-brand-mark {
+  border: 4px solid #07185f;
+  background: #00d9ff;
+  box-shadow: 0 7px 0 #07185f;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-topic-orbit__ring {
+  border: 6px solid var(--kiosk-orbit-accent, #5be0ff);
+  box-shadow:
+    0 0 0 4px #07185f,
+    0 14px 0 rgba(7, 24, 95, 0.18);
+  opacity: 0.98;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-topic-orbit__halo {
+  border-color: rgba(255, 242, 184, 0.38);
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-orbit-chip {
+  width: clamp(6.9rem, 7.7vw, 8.65rem);
+  min-height: 3.9rem;
+  gap: 0.65rem;
+  padding: 0.68rem 0.76rem;
+  align-items: center;
+  border: 5px solid #07185f;
+  border-radius: 0.85rem;
+  background: #fff2b8;
+  color: #07185f;
+  box-shadow: 7px 7px 0 #07185f;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-orbit-chip span {
+  width: 0.95rem;
+  height: 0.95rem;
+  align-self: auto;
+  border: 3px solid #07185f;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-orbit-chip p {
+  font-size: clamp(0.68rem, 0.72vw, 0.82rem);
+  font-weight: 900;
+  letter-spacing: 0;
+  color: #07185f;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet {
+  /* Zelfde media-placeholdervorm als het tekstvak ernaast. */
+  width: clamp(24rem, 34vw, 36rem);
+  max-width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 1.65rem;
+  filter: none;
+  background:
+    radial-gradient(circle at 0% 0%, var(--kiosk-accent-glow, rgba(70, 180, 105, 0.34)), transparent 38%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.055)),
+    rgba(7, 16, 22, 0.34);
+  box-shadow:
+    0 28px 92px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet__field,
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet__crater,
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet__shine {
+  display: block;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet__label p,
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet__label span {
+  color: var(--kiosk-accent-light, #fff2b8);
+  text-shadow:
+    0 1px 0 #07185f,
+    3px 3px 0 rgba(7, 24, 95, 0.78);
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet__label h2 {
+  -webkit-text-stroke: 1.25px var(--kiosk-accent-light, #fff2b8);
+  text-shadow:
+    0 0 14px var(--kiosk-accent-glow, rgba(255, 242, 184, 0.55)),
+    5px 6px 0 #07185f;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-detail-panel {
+  border: 6px solid #07185f;
+  border-radius: 0.85rem;
+  background: #fff2b8;
+  color: #07185f;
+  box-shadow: 12px 12px 0 #07185f;
+  backdrop-filter: none;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-detail-panel__header p,
+[data-visual-style='kurzgesagt'] .kiosk-detail-panel__columns h2 {
+  color: var(--panel-accent, #ff3344);
+  text-shadow: none;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-detail-panel__header h1 {
+  color: #07185f;
+  text-shadow: none;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-detail-panel__header > span {
+  border: 4px solid #07185f;
+  background: var(--panel-accent, #ff3344);
+  color: #07185f;
+  box-shadow: 0 5px 0 #07185f;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-detail-panel__intro,
+[data-visual-style='kurzgesagt'] .kiosk-detail-panel__body,
+[data-visual-style='kurzgesagt'] .kiosk-detail-panel__columns li,
+[data-visual-style='kurzgesagt'] .kiosk-signal-strip strong,
+[data-visual-style='kurzgesagt'] .kiosk-signal-strip span {
+  color: #07185f;
+  text-shadow: none;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-detail-panel__body,
+[data-visual-style='kurzgesagt'] .kiosk-signal-strip span {
+  color: rgba(7, 24, 95, 0.72);
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-signal-strip div {
+  border: 4px solid #07185f;
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .visual-style-toggle,
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .connection-pill,
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel,
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-orbit-chip,
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-signal-strip div,
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__header > span {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.055)),
+    rgba(7, 16, 22, 0.34);
+  color: #ffffff;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(22px) saturate(1.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+}
+
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .visual-style-toggle:hover {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08)),
+    rgba(7, 16, 22, 0.42);
+}
+
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel {
+  border-radius: 1.65rem;
+  background:
+    radial-gradient(circle at 0% 0%, var(--panel-glow, rgba(70, 180, 105, 0.24)), transparent 36%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
+    rgba(5, 8, 23, 0.42);
+}
+
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-orbit-chip {
+  border-radius: 1rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.055)),
+    rgba(5, 8, 23, 0.44);
+}
+
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-orbit-chip span {
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 18px var(--chip-shadow, rgba(70, 180, 105, 0.5));
+}
+
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-orbit-chip p,
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__header h1,
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__intro,
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__body,
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__columns li,
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-signal-strip strong,
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-signal-strip span {
+  color: #ffffff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.36);
+}
+
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__body,
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-signal-strip span {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__header p,
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__columns h2 {
+  color: var(--panel-accent, #46b469);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.42);
+}
+
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__header > span {
+  color: #ffffff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.38);
+}
+
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-signal-strip div {
+  border-radius: 1rem;
+}
+
+@keyframes kiosk-detail-planet-float {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-0.6rem);
+  }
+}
+
+@keyframes kiosk-surface-drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(1.6rem, -0.8rem, 0) rotate(3deg);
+  }
+}
+
+@keyframes kiosk-surface-drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(-1.25rem, 1rem, 0) rotate(-4deg);
+  }
+}
+
+@keyframes kiosk-surface-drift-c {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0.9rem, 0.9rem, 0) scale(1.05);
+  }
+}
+
+@keyframes kiosk-nebula-camera {
+  0%,
+  100% {
+    transform: translate3d(-1.5%, 0, 0) scale(1.02);
+  }
+  50% {
+    transform: translate3d(1.5%, -1%, 0) scale(1.055);
+  }
+}
+
+@keyframes kiosk-nebula-drift-primary {
+  0%,
+  100% {
+    transform: translate3d(-22px, 10px, 0) scale(1);
+    opacity: 0.98;
+  }
+  50% {
+    transform: translate3d(34px, -26px, 0) scale(1.025);
+    opacity: 0.9;
+  }
+}
+
+@keyframes kiosk-nebula-drift-secondary {
+  0%,
+  100% {
+    transform: translate3d(28px, -22px, 0) scale(1.015);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate3d(-38px, 18px, 0) scale(0.99);
+    opacity: 1;
+  }
+}
+
+@keyframes kiosk-nebula-pillar-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(12px, -18px, 0);
+  }
+}
+
+@keyframes kiosk-nebula-filament-flow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -180;
+  }
+}
+
+@keyframes kiosk-nebula-star-pulse {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: scale(0.88);
+  }
+  48% {
+    opacity: 0.92;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes kiosk-nebula-sparkle-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.62;
+  }
+  50% {
+    transform: translate3d(-18px, 12px, 0);
+    opacity: 0.92;
+  }
+}
+
+@media (max-width: 1180px) {
+  .kiosk-detail-layout {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .kiosk-detail-planet-zone {
+    min-height: 38rem;
+  }
+
+  .kiosk-detail-panel {
+    width: min(100%, 54rem);
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 760px) {
+  [data-visual-style='kurzgesagt'] .visual-style-toggle {
+    left: 1rem;
+    bottom: 1rem;
+  }
+
+  [data-visual-style='kurzgesagt'] .connection-pill {
+    right: 1rem;
+    bottom: 5rem;
+    top: auto;
+    max-width: calc(100vw - 2rem);
+    height: auto;
+    min-height: 0;
+  }
+
+  [data-visual-style='kurzgesagt'] .kiosk-title {
+    font-size: clamp(2.5rem, 13vw, 3.35rem);
+    line-height: 1.02;
+    overflow-wrap: anywhere;
+  }
+
+  [data-visual-style='kurzgesagt'] .kiosk-copy {
+    font-size: clamp(1.05rem, 5.3vw, 1.35rem);
+    line-height: 1.45;
+  }
+
+  [data-visual-style='kurzgesagt'] .central-planet-label {
+    max-width: min(82vw, 14rem);
+    padding: 0;
+  }
+
+  .kiosk-detail-main {
+    align-items: flex-start;
+    padding-top: 7rem;
+  }
+
+  .kiosk-detail-planet-zone {
+    min-height: 23.5rem;
+  }
+
+  .kiosk-detail-planet {
+    width: min(84vw, 24rem);
+  }
+
+  .kiosk-topic-orbit {
+    inset: 0;
+  }
+
+  .kiosk-orbit-chip {
+    width: 7.7rem;
+    min-height: 4.2rem;
+    padding: 0.7rem;
+  }
+
+  .kiosk-orbit-chip p {
+    font-size: 0.72rem;
+  }
+
+  .kiosk-detail-panel__header {
+    flex-direction: column;
+  }
+
+  .kiosk-detail-panel__header > span {
+    min-width: 0;
+  }
+
+  .kiosk-detail-panel__columns,
+  .kiosk-signal-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .kiosk-detail-panel {
+    padding: 1.05rem;
+  }
+
+  .kiosk-detail-panel__header h1 {
+    font-size: clamp(2rem, 8vw, 2.65rem);
+  }
+
+  .kiosk-detail-shell .visual-style-toggle {
+    top: 5.25rem;
+    right: 1rem;
+    bottom: auto;
+    left: auto;
+  }
+
+  .kiosk-detail-shell .connection-pill {
+    top: 1rem;
+    right: 1rem;
+    bottom: auto;
+  }
+}
+
+:root {
+  --font-size: 16px;
+  --background: #ffffff;
+  --foreground: oklch(0.145 0 0);
+  --card: #ffffff;
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: #030213;
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.95 0.0058 264.53);
+  --secondary-foreground: #030213;
+  --muted: #ececf0;
+  --muted-foreground: #717182;
+  --accent: #e9ebef;
+  --accent-foreground: #030213;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --input: transparent;
+  --input-background: #f3f3f5;
+  --switch-background: #cbced4;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: #030213;
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #050208;
+  }
+
+  body {
+    min-width: 320px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /**
+  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
+  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
+  */
+
+  html {
+    font-size: var(--font-size);
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h2 {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h3 {
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  h4 {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  label {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  button {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  input {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-normal);
+    line-height: 1.5;
+  }
+}
