@@ -17,21 +17,41 @@ export interface ContentNode {
   };
 }
 
+// Foto's staan direct in de repo (src/assets/topics), niet meer in de OUD
+// git-submodule. Reden: op een tweede PC (kiosk/websocket-client) was de
+// submodule niet uitgecheckt, waardoor de afbeeldingen 404'den en alleen het
+// fallback-icoon verscheen. Als gewone module-imports bundelt en hasht Vite
+// ze, en komen ze altijd mee met een git pull / build.
+import aiMainImg from '../assets/topics/ai_main.jpg';
+import aiTruckImg from '../assets/topics/ai_truck.jpg';
+import aiTransportImg from '../assets/topics/ai_transport_sector.jpg';
+import xrHeadsetImg from '../assets/topics/xr_vr_headset.jpg';
+import xrAllianderImg from '../assets/topics/xr_alliander2.jpg';
+import xrAllianderDetailImg from '../assets/topics/xr_alliander.jpg';
+import twinMainImg from '../assets/topics/twin_main.jpg';
+import twinGomaImg from '../assets/topics/twin_goma1.jpg';
+import twinGomaDetailImg from '../assets/topics/twin_goma2.jpg';
+import twinResultImg from '../assets/topics/twin_result.webp';
+import smartIndustryImg from '../assets/topics/smart_industry.jpg';
+import smartIndustryWideImg from '../assets/topics/smart_industry1.jpg';
+import additivePrinterImg from '../assets/topics/additive_3d_printer.jpg';
+import additiveCaseImg from '../assets/topics/additive_lalique1.jpg';
+
 const oldImages = {
-  aiMain: new URL('../../OUD/ixperium-smart-industry/content/ai/ai_main.jpg', import.meta.url).href,
-  aiRoadsense: new URL('../../OUD/ixperium-smart-industry/content/cases/ai/truck.jpg', import.meta.url).href,
-  aiTransport: new URL('../../OUD/ixperium-smart-industry/content/ai/transport_sector.jpg', import.meta.url).href,
-  xrHeadset: new URL('../../OUD/ixperium-smart-industry/content/xr/vr_headset.jpg', import.meta.url).href,
-  xrAlliander: new URL('../../OUD/ixperium-smart-industry/content/cases/xrhmi/alliander-xr2.jpg', import.meta.url).href,
-  xrAllianderDetail: new URL('../../OUD/ixperium-smart-industry/content/cases/xrhmi/alliander-xr.jpg', import.meta.url).href,
-  twinMain: new URL('../../OUD/ixperium-smart-industry/content/digitaltwin/digital_twin.jpg', import.meta.url).href,
-  twinGoma: new URL('../../OUD/ixperium-smart-industry/content/cases/digitaltwin/goma1.jpg', import.meta.url).href,
-  twinGomaDetail: new URL('../../OUD/ixperium-smart-industry/content/cases/digitaltwin/goma2.jpg', import.meta.url).href,
-  twinResult: new URL('../../OUD/ixperium-smart-industry/content/cases/digitaltwin/result_hu7398049482760340400.webp', import.meta.url).href,
-  smartIndustry: new URL('../../OUD/ixperium-smart-industry/content/smartindustry/smart_industry.jpg', import.meta.url).href,
-  smartIndustryWide: new URL('../../OUD/ixperium-smart-industry/content/smartindustry/smart_industry1.jpg', import.meta.url).href,
-  additivePrinter: new URL('../../OUD/ixperium-smart-industry/content/additive/3d_printer.jpg', import.meta.url).href,
-  additiveCase: new URL('../../OUD/ixperium-smart-industry/content/cases/rpam/lalique1.jpg', import.meta.url).href,
+  aiMain: aiMainImg,
+  aiRoadsense: aiTruckImg,
+  aiTransport: aiTransportImg,
+  xrHeadset: xrHeadsetImg,
+  xrAlliander: xrAllianderImg,
+  xrAllianderDetail: xrAllianderDetailImg,
+  twinMain: twinMainImg,
+  twinGoma: twinGomaImg,
+  twinGomaDetail: twinGomaDetailImg,
+  twinResult: twinResultImg,
+  smartIndustry: smartIndustryImg,
+  smartIndustryWide: smartIndustryWideImg,
+  additivePrinter: additivePrinterImg,
+  additiveCase: additiveCaseImg,
 } as const;
 
 const hanImages = {
