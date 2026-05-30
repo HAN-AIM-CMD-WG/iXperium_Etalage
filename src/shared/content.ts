@@ -17,11 +17,9 @@ export interface ContentNode {
   };
 }
 
-// Foto's staan direct in de repo (src/assets/topics), niet meer in de OUD
-// git-submodule. Reden: op een tweede PC (kiosk/websocket-client) was de
-// submodule niet uitgecheckt, waardoor de afbeeldingen 404'den en alleen het
-// fallback-icoon verscheen. Als gewone module-imports bundelt en hasht Vite
-// ze, en komen ze altijd mee met een git pull / build.
+// Topic-foto's staan direct in de repo (src/assets/topics) als gewone
+// module-imports. Vite bundelt + hasht ze, dus ze komen altijd mee met een
+// git pull / build op elke machine (kiosk- en touchtafel-PC).
 import aiMainImg from '../assets/topics/ai_main.jpg';
 import aiTruckImg from '../assets/topics/ai_truck.jpg';
 import aiTransportImg from '../assets/topics/ai_transport_sector.jpg';
