@@ -21,8 +21,8 @@ const ORBIT_ROTATION_DEG = -20;
 const ORBIT_ROTATION = (ORBIT_ROTATION_DEG * Math.PI) / 180;
 const TAU = Math.PI * 2;
 const LABEL_FONT_FAMILY = 'Overpass, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-const MIN_LABEL_FONT_SIZE = 9.4;
-const MAX_LABEL_FONT_SIZE = 17.2;
+const MIN_LABEL_FONT_SIZE = 11;
+const MAX_LABEL_FONT_SIZE = 22;
 const VECTOR_INK = '#07185F';
 const VECTOR_CREAM = '#FFF2B8';
 const CENTRAL_LABEL_FILL = '#FFFFFF';
@@ -466,7 +466,7 @@ function wrapLabel(
 function getPlanetLabelLayout(context: CanvasRenderingContext2D, text: string, radius: number, scale: number) {
   const maxWidth = Math.max(38, radius * (scale < 0.62 ? 1.5 : 1.62));
   const maxLines = radius < 32 ? 2 : 3;
-  const baseFontSize = clamp(radius * 0.3, MIN_LABEL_FONT_SIZE, MAX_LABEL_FONT_SIZE);
+  const baseFontSize = clamp(radius * 0.36, MIN_LABEL_FONT_SIZE, MAX_LABEL_FONT_SIZE);
   const minFontSize = radius < 32 ? 8.6 : MIN_LABEL_FONT_SIZE;
   const candidates = getLabelCandidates(text);
   let fallback: {
@@ -546,9 +546,9 @@ function drawCentralStyleLabelLine(
   fontSize: number,
   glowColor: string,
 ) {
-  const shadowX = clamp(fontSize * 0.078, 1.2, 3.1);
-  const shadowY = clamp(fontSize * 0.104, 1.45, 4.1);
-  const strokeWidth = clamp(fontSize * 0.045, 0.85, 1.45);
+  const shadowX = clamp(fontSize * 0.082, 1.3, 3.4);
+  const shadowY = clamp(fontSize * 0.11, 1.6, 4.4);
+  const strokeWidth = clamp(fontSize * 0.06, 1.1, 2.0);
   const glowBlur = clamp(fontSize * 0.34, 3.5, 13);
 
   context.save();
@@ -558,18 +558,27 @@ function drawCentralStyleLabelLine(
   context.lineJoin = 'round';
   context.miterLimit = 2;
 
+  // 1) Donkere drop voor diepte/contrast tegen lichte planeet-delen.
   context.shadowBlur = 0;
   context.fillStyle = CENTRAL_LABEL_SHADOW;
   context.fillText(line, x + shadowX, y + shadowY);
 
-  context.shadowColor = rgba(glowColor, 0.6);
+  // 2) Donkere outline rondom de letters — laat het wit overal loskomen van
+  //    de drukke planeet-body, ongeacht de kleur eronder.
+  context.lineWidth = strokeWidth * 2.4;
+  context.strokeStyle = 'rgba(2, 6, 20, 0.78)';
+  context.strokeText(line, x, y);
+
+  // 3) Zachte theme-glow + helder-wit vlak.
+  context.shadowColor = rgba(glowColor, 0.65);
   context.shadowBlur = glowBlur;
   context.fillStyle = CENTRAL_LABEL_FILL;
   context.fillText(line, x, y);
 
+  // 4) Dunne witte rand voor crisp, fel resultaat.
   context.shadowBlur = 0;
   context.lineWidth = strokeWidth;
-  context.strokeStyle = 'rgba(255, 255, 255, 0.98)';
+  context.strokeStyle = 'rgba(255, 255, 255, 1)';
   context.strokeText(line, x, y);
   context.fillStyle = CENTRAL_LABEL_FILL;
   context.fillText(line, x, y);
@@ -660,7 +669,7 @@ function drawOrbitingTextBand(
   bandLabel: string,
 ) {
   const radius = planet.radius;
-  const bandHeight = clamp(radius * 0.5, 17, 36);
+  const bandHeight = clamp(radius * 0.58, 21, 44);
   const bandTilt = -0.18 + Math.sin(animTime * 0.32 + seed * 0.004) * 0.055;
   const bandOffsetY = Math.sin(animTime * 0.54 + seed * 0.01) * radius * 0.035;
   const ringRadiusX = radius * 1.42;
@@ -703,23 +712,23 @@ function drawOrbitingTextBand(
   // boost (via fill-kleur), ✦ ster-bullet, refined typography weight.
   // ============================================================
 
-  // Dark backing arc — enige achtergrond. Dik genoeg om de tekst
-  // volledig te overdekken zodat de fill leesbaar is zonder per-glyph
-  // stroke/shadow.
+  // Dark backing arc — enige achtergrond. Donkerder + dikker dan voorheen
+  // zodat de fellere witte tekst goed contrasteert en leesbaar blijft.
   context.lineCap = 'round';
   context.shadowBlur = 0;
-  context.lineWidth = bandHeight * 0.76;
-  context.strokeStyle = 'rgba(3, 6, 14, 0.72)';
+  context.lineWidth = bandHeight * 0.82;
+  context.strokeStyle = 'rgba(2, 4, 11, 0.84)';
   context.beginPath();
   context.ellipse(0, bandOffsetY, ringRadiusX, ringRadiusY, 0, Math.PI * 0.05, Math.PI * 0.95);
   context.stroke();
 
-  // Tekst-setup (één keer voor de glyph-loop)
-  const fontSize = clamp(radius * 0.28, 11, 21);
-  context.font = `700 ${fontSize}px ${LABEL_FONT_FAMILY}`;
+  // Tekst-setup (één keer voor de glyph-loop). Groter + zwaarder gewicht
+  // voor betere leesbaarheid op de draaiende planeten.
+  const fontSize = clamp(radius * 0.36, 14, 27);
+  context.font = `800 ${fontSize}px ${LABEL_FONT_FAMILY}`;
   context.textBaseline = 'middle';
   context.textAlign = 'center';
-  context.letterSpacing = '0.8px';
+  context.letterSpacing = '0.6px';
 
   // ✦ ster-bullet voelt premium ten opzichte van de oude • dot.
   const repeated = `${bandLabel}   ✦   `;
@@ -743,9 +752,10 @@ function drawOrbitingTextBand(
   // Bespaart ~480 strokeText-calls per frame én alle offscreen blur passes.
   context.shadowBlur = 0;
 
-  // Pre-compute cream highlight kleuren (gemixt met theme color).
-  const baseCream = { r: 255, g: 246, b: 218 };
-  const accentCream = { r: 255, g: 232, b: 178 };
+  // Bijna-puur-wit voor maximale leesbaarheid + felheid. Heel licht warm
+  // getint zodat het niet klinisch-koud aanvoelt, maar duidelijk wit.
+  const baseCream = { r: 255, g: 255, b: 255 };
+  const accentCream = { r: 255, g: 250, b: 236 };
 
   while (textCursor < arcLength + repeatedWidth) {
     for (let glyphIndex = 0; glyphIndex < repeatedGlyphs.length; glyphIndex += 1) {
@@ -793,10 +803,13 @@ function drawOrbitingTextBand(
         const isStar = glyph === '✦';
         let fillColor: string;
         if (isStar) {
-          fillColor = mixRgba(planet.node.color, baseCream, 0.58 + sweepBoost * 0.3, 1);
+          // Bullet houdt iets meer theme-kleur als accent.
+          fillColor = mixRgba(planet.node.color, baseCream, 0.7 + sweepBoost * 0.3, 1);
         } else {
+          // Letters bijna volledig wit (0.92→1.0 richting wit) zodat ze fel
+          // en leesbaar zijn, ongeacht de planeetkleur eronder.
           const target = glyphIndex % 4 === 0 ? accentCream : baseCream;
-          const mixAmount = 0.78 + sweepBoost * 0.22;
+          const mixAmount = 0.92 + sweepBoost * 0.08;
           fillColor = mixRgba(planet.node.color, target, mixAmount, 1);
         }
 
@@ -994,11 +1007,20 @@ function drawVectorPlanet(
     context.textAlign = 'center';
     context.textBaseline = 'middle';
 
+    // Label-alpha boost: de planeet-body wordt door depth gedimd
+    // (globalAlpha = layerOpacity), maar de tekst moet juist fel + leesbaar
+    // blijven. We tillen de alpha op naar een hoge ondergrond zodat ook
+    // planeten verder naar achter een helder-wit label tonen.
+    context.save();
+    context.globalAlpha = Math.min(1, layerOpacity * 0.4 + 0.6);
+
     const firstLineY = labelCenterY - ((layout.lines.length - 1) * layout.lineHeight) / 2;
     layout.lines.forEach((line, index) => {
       const y = firstLineY + index * layout.lineHeight;
       drawCentralStyleLabelLine(context, line, planet.x, y, layout.fontSize, planet.node.color);
     });
+
+    context.restore();
 
     context.save();
     context.shadowBlur = clamp(planet.radius * 0.04, 1.8, 4.5);
