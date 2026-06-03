@@ -307,7 +307,7 @@ const KioskBrand = memo(function KioskBrand() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.16 }}
     >
-      <div className="kiosk-brand-mark h-12 w-12 rounded-[0.9rem] bg-gradient-to-br from-[#46B469] to-[#1E90FF] shadow-[0_16px_42px_rgba(70,180,105,0.24)]" />
+      <div className="app-branding__mark kiosk-brand-mark h-12 w-12 rounded-[0.9rem] bg-gradient-to-br from-[#46B469] to-[#1E90FF] shadow-[0_16px_42px_rgba(70,180,105,0.24)]" />
       <div>
         <h1 className="text-2xl font-black leading-7 tracking-normal text-white drop-shadow-lg">iXperium</h1>
         <p className="mt-1 text-xs font-semibold text-white/55">Smart Industry detailweergave</p>

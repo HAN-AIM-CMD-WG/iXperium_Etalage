@@ -12,8 +12,6 @@ import { NavigationButton } from '../app/components/NavigationButton';
 import { SpaceCanvas } from '../app/components/scene/SpaceCanvas';
 import { PerfStats } from '../app/components/scene/PerfStats';
 
-const VECTOR_INK = '#07185F';
-const VECTOR_CREAM = '#FFF2B8';
 const TABLE_SCENE_SCALE = 0.88;
 const TABLE_MAIN_ORBIT = {
   radiusX: 430 * TABLE_SCENE_SCALE,
@@ -66,13 +64,6 @@ function rgbaHex(hex: string, alpha: number) {
  * Geen bg-gradient / geen blur rings meer: shader + bloom doen dat straks allemaal.
  */
 const CentralPlanet = memo(function CentralPlanet({ accentColor = '#8B5CF6' }: { accentColor?: string }) {
-  const labelColors = useMemo(() => ({
-    text: mixHex(accentColor, VECTOR_INK, 0.42),
-    secondary: mixHex(accentColor, VECTOR_INK, 0.58),
-    highlight: mixHex(accentColor, VECTOR_CREAM, 0.82),
-    glow: rgbaHex(accentColor, 0.72),
-  }), [accentColor]);
-
   return (
     <motion.div
       className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
@@ -87,37 +78,21 @@ const CentralPlanet = memo(function CentralPlanet({ accentColor = '#8B5CF6' }: {
         transition={{ duration: 7, repeat: Infinity, ease: 'linear' }}
       >
         <div
-          className="central-planet-label relative z-10 w-[min(17.5rem,38vw)] text-center"
+          className="central-planet-label ixperium-core-mark relative z-10 w-[min(17.5rem,38vw)] text-center"
           style={{
             '--central-accent': accentColor,
-            '--central-text': labelColors.text,
-            '--central-secondary': labelColors.secondary,
-            '--central-highlight': labelColors.highlight,
-            '--central-glow': labelColors.glow,
+            '--central-glow': rgbaHex(accentColor, 0.72),
           } as CSSProperties & {
             '--central-accent': string;
-            '--central-text': string;
-            '--central-secondary': string;
-            '--central-highlight': string;
             '--central-glow': string;
           }}
         >
-          <p className="central-planet-label__kicker text-[10px] uppercase text-white/42">
-            Core
-          </p>
-          <h1 className="central-planet-label__title mt-1 text-[2.5rem] font-black text-white drop-shadow-[0_3px_14px_rgba(0,0,0,0.82)]">
-            iXperium
+          <h1 className="ixperium-core-mark__logo" aria-label="iXperium Centre of Expertise">
+            iXPERIUM
           </h1>
-          <p className="central-planet-label__subtitle mt-1 text-sm font-semibold text-white/68">
-            Smart Industry
-          </p>
-          <div
-            className="central-planet-divider mx-auto mt-3 h-px w-20"
-            style={{ background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)` }}
-          />
-          <p className="central-planet-label__footer mt-2 text-[11px] uppercase text-white/48">
-            Navigation Core
-          </p>
+          <p className="ixperium-core-mark__tagline">Centre of Expertise</p>
+          <div className="ixperium-core-mark__rule" />
+          <p className="ixperium-core-mark__subline">Smart Industry touchtafel</p>
         </div>
       </motion.div>
     </motion.div>
@@ -615,7 +590,7 @@ export function TableApp() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
       >
-        <div className="h-11 w-11 rounded-[0.9rem] bg-gradient-to-br from-[#46B469] to-[#1E90FF] shadow-[0_16px_42px_rgba(70,180,105,0.24)]" />
+        <div className="app-branding__mark h-11 w-11 rounded-[0.9rem] bg-gradient-to-br from-[#46B469] to-[#1E90FF] shadow-[0_16px_42px_rgba(70,180,105,0.24)]" />
         <div>
           <h1 className="text-2xl font-black leading-7 tracking-normal text-white drop-shadow-lg">
             iXperium

@@ -650,30 +650,45 @@
 }
 
 [data-visual-style='kurzgesagt'] {
+  --ixp-purple: #573876;
+  --ixp-purple-soft: #746092;
+  --ixp-lavender: #e4d2e4;
+  --ixp-yellow: #f6f01d;
+  --ixp-magenta: #f063bd;
+  --ixp-cyan: #2dbce6;
+  --ixp-light-blue: #9ebce6;
+  --ixp-dark: #19353c;
+  --ixp-font-heading: 'Overpass', 'Source Sans Pro', 'Avenir Next', system-ui, sans-serif;
+  --ixp-font-body: 'Source Sans Pro', 'Avenir Next', Inter, system-ui, sans-serif;
   background: #1736d1;
+  font-family: var(--ixp-font-body);
 }
 
 [data-visual-style='kurzgesagt'] .visual-style-toggle,
 [data-visual-style='kurzgesagt'] .connection-pill,
 [data-visual-style='kurzgesagt'] .navigation-button {
-  border: 4px solid #07185f;
+  border: 4px solid var(--ixp-purple);
   background: #fff2b8;
-  color: #07185f;
-  box-shadow: 0 7px 0 #07185f;
+  color: var(--ixp-dark);
+  box-shadow: 0 7px 0 var(--ixp-purple);
   backdrop-filter: none;
+  font-family: var(--ixp-font-heading);
 }
 
 [data-visual-style='kurzgesagt'] .visual-style-toggle:hover,
 [data-visual-style='kurzgesagt'] .navigation-button:hover {
-  background: #ffd400;
+  background: var(--ixp-yellow);
 }
 
 [data-visual-style='kurzgesagt'] .app-branding h1,
 [data-visual-style='kurzgesagt'] .table-title,
 [data-visual-style='kurzgesagt'] .kiosk-title {
+  font-family: var(--ixp-font-heading);
   color: #fff2b8;
   letter-spacing: 0;
-  text-shadow: 4px 4px 0 #07185f;
+  text-shadow:
+    0 1px 0 var(--ixp-yellow),
+    4px 4px 0 rgba(87, 56, 118, 0.88);
 }
 
 [data-visual-style='kurzgesagt'] .app-branding p,
@@ -681,9 +696,45 @@
 [data-visual-style='kurzgesagt'] .table-eyebrow,
 [data-visual-style='kurzgesagt'] .kiosk-eyebrow,
 [data-visual-style='kurzgesagt'] .kiosk-copy {
+  font-family: var(--ixp-font-body);
   color: #fff2b8;
   letter-spacing: 0;
-  text-shadow: 2px 2px 0 #07185f;
+  text-shadow: 2px 2px 0 rgba(25, 53, 60, 0.82);
+}
+
+[data-visual-style='kurzgesagt'] .app-branding__mark {
+  position: relative;
+  overflow: hidden;
+  border: 4px solid var(--ixp-purple);
+  background:
+    linear-gradient(90deg, transparent 47%, rgba(25, 53, 60, 0.24) 47% 53%, transparent 53%),
+    linear-gradient(180deg, var(--ixp-yellow) 0 48%, var(--ixp-cyan) 48% 100%);
+  box-shadow: 0 7px 0 var(--ixp-purple), 0 16px 42px rgba(87, 56, 118, 0.28);
+}
+
+[data-visual-style='kurzgesagt'] .app-branding__mark::before,
+[data-visual-style='kurzgesagt'] .app-branding__mark::after {
+  position: absolute;
+  border: 3px solid var(--ixp-purple);
+  content: '';
+}
+
+[data-visual-style='kurzgesagt'] .app-branding__mark::before {
+  left: -18%;
+  top: 17%;
+  width: 64%;
+  height: 38%;
+  border-radius: 999px;
+  background: var(--ixp-magenta);
+}
+
+[data-visual-style='kurzgesagt'] .app-branding__mark::after {
+  right: -16%;
+  bottom: 14%;
+  width: 54%;
+  height: 42%;
+  border-radius: 0.35rem;
+  background: var(--ixp-light-blue);
 }
 
 [data-visual-style='kurzgesagt'] .central-planet-label {
@@ -710,12 +761,14 @@
 }
 
 [data-visual-style='kurzgesagt'] .central-planet-label__title {
+  font-family: var(--ixp-font-heading);
   font-size: clamp(2.25rem, 4.1vw, 3.35rem);
   line-height: 0.94;
   -webkit-text-stroke: 1.45px var(--central-highlight, #fff2b8);
 }
 
 [data-visual-style='kurzgesagt'] .central-planet-label__subtitle {
+  font-family: var(--ixp-font-body);
   color: var(--central-secondary, #07185f);
   text-shadow:
     0 1px 0 var(--central-highlight, #fff2b8),
@@ -725,6 +778,7 @@
 
 [data-visual-style='kurzgesagt'] .central-planet-label__kicker,
 [data-visual-style='kurzgesagt'] .central-planet-label__footer {
+  font-family: var(--ixp-font-heading);
   font-weight: 900;
   opacity: 0.86;
   color: var(--central-secondary, #07185f);
@@ -738,6 +792,70 @@
   box-shadow: 0 2px 0 rgba(7, 24, 95, 0.85);
 }
 
+[data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark {
+  max-width: min(23rem, 43vw);
+  filter:
+    drop-shadow(0 3px 0 rgba(255, 255, 255, 0.42))
+    drop-shadow(0 9px 18px rgba(7, 24, 95, 0.42));
+}
+
+[data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__logo {
+  margin: 0;
+  color: var(--ixp-purple);
+  font-family: var(--ixp-font-heading);
+  font-size: clamp(2.65rem, 5vw, 4rem);
+  font-weight: 700;
+  line-height: 0.78;
+  letter-spacing: -0.055em;
+  text-shadow:
+    0 1px 0 #ffffff,
+    0 0 16px rgba(246, 240, 29, 0.54),
+    4px 5px 0 rgba(7, 24, 95, 0.32);
+  -webkit-text-stroke: 1.05px rgba(255, 255, 255, 0.92);
+}
+
+[data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__tagline {
+  margin: 0.42rem 0 0;
+  color: var(--ixp-purple);
+  font-family: var(--ixp-font-heading);
+  font-size: clamp(0.68rem, 1.24vw, 0.98rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow:
+    0 1px 0 #ffffff,
+    2px 2px 0 rgba(7, 24, 95, 0.24);
+  -webkit-text-stroke: 0.35px rgba(255, 255, 255, 0.85);
+}
+
+[data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__rule {
+  width: min(9.5rem, 54%);
+  height: 0.54rem;
+  margin: 1rem auto 0;
+  border: 3px solid var(--ixp-purple);
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, var(--ixp-yellow) 0 34%, var(--ixp-magenta) 34% 67%, var(--ixp-cyan) 67% 100%);
+  box-shadow:
+    0 3px 0 rgba(7, 24, 95, 0.42),
+    0 0 15px var(--central-glow, rgba(255, 242, 184, 0.45));
+}
+
+[data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__subline {
+  margin: 0.75rem 0 0;
+  color: #fff2b8;
+  font-family: var(--ixp-font-body);
+  font-size: clamp(0.72rem, 1.25vw, 0.95rem);
+  font-weight: 800;
+  line-height: 1.18;
+  letter-spacing: 0.02em;
+  text-shadow:
+    0 1px 10px rgba(0, 0, 0, 0.56),
+    2px 2px 0 rgba(87, 56, 118, 0.52);
+  -webkit-text-stroke: 0;
+}
+
 [data-visual-style='kurzgesagt'] .content-card {
   border: 6px solid #07185f;
   border-radius: 0.5rem;
@@ -745,15 +863,19 @@
 }
 
 [data-visual-style='kurzgesagt'] .content-card-title {
+  font-family: var(--ixp-font-heading);
   color: #fff2b8;
   letter-spacing: 0;
-  text-shadow: 3px 3px 0 #07185f;
+  text-shadow:
+    0 1px 0 var(--ixp-yellow),
+    3px 3px 0 rgba(87, 56, 118, 0.86);
 }
 
 [data-visual-style='kurzgesagt'] .content-card-copy,
 [data-visual-style='kurzgesagt'] .content-card-related h3 {
+  font-family: var(--ixp-font-body);
   color: #fff2b8;
-  text-shadow: 2px 2px 0 #07185f;
+  text-shadow: 2px 2px 0 rgba(25, 53, 60, 0.78);
 }
 
 [data-visual-style='kurzgesagt'] .content-card-related {
@@ -762,15 +884,16 @@
 
 [data-visual-style='kurzgesagt'] .content-card-chip,
 [data-visual-style='kurzgesagt'] .related-node-button {
-  border: 4px solid #07185f;
+  border: 4px solid var(--ixp-purple);
   background: #fff2b8;
-  color: #07185f;
-  box-shadow: 0 5px 0 #07185f;
+  color: var(--ixp-dark);
+  box-shadow: 0 5px 0 var(--ixp-purple);
   backdrop-filter: none;
+  font-family: var(--ixp-font-heading);
 }
 
 [data-visual-style='kurzgesagt'] .related-node-label {
-  color: #07185f;
+  color: var(--ixp-dark);
   text-shadow: none;
 }
 
@@ -821,8 +944,27 @@
 [data-visual-style='kurzgesagt'] .kiosk-card-title,
 [data-visual-style='kurzgesagt'] .kiosk-chip,
 [data-visual-style='kurzgesagt'] .kiosk-topic-row .kiosk-copy {
-  color: #07185f;
+  color: var(--ixp-dark);
   text-shadow: none;
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-card-title,
+[data-visual-style='kurzgesagt'] .kiosk-chip,
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet__label h2,
+[data-visual-style='kurzgesagt'] .kiosk-detail-panel__header h1,
+[data-visual-style='kurzgesagt'] .kiosk-detail-panel__columns h2,
+[data-visual-style='kurzgesagt'] .kiosk-signal-strip strong {
+  font-family: var(--ixp-font-heading);
+}
+
+[data-visual-style='kurzgesagt'] .kiosk-route-card .kiosk-copy,
+[data-visual-style='kurzgesagt'] .kiosk-topic-row .kiosk-copy,
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet__label span,
+[data-visual-style='kurzgesagt'] .kiosk-detail-panel__intro,
+[data-visual-style='kurzgesagt'] .kiosk-detail-panel__body,
+[data-visual-style='kurzgesagt'] .kiosk-detail-panel__columns li,
+[data-visual-style='kurzgesagt'] .kiosk-signal-strip span {
+  font-family: var(--ixp-font-body);
 }
 
 [data-visual-style='kurzgesagt'] .kiosk-topic-row {
@@ -1627,9 +1769,11 @@
 }
 
 [data-visual-style='kurzgesagt'] .kiosk-brand-mark {
-  border: 4px solid #07185f;
-  background: #00d9ff;
-  box-shadow: 0 7px 0 #07185f;
+  border-color: var(--ixp-purple);
+  background:
+    linear-gradient(90deg, transparent 47%, rgba(25, 53, 60, 0.24) 47% 53%, transparent 53%),
+    linear-gradient(180deg, var(--ixp-yellow) 0 48%, var(--ixp-cyan) 48% 100%);
+  box-shadow: 0 7px 0 var(--ixp-purple), 0 16px 42px rgba(87, 56, 118, 0.28);
 }
 
 [data-visual-style='kurzgesagt'] .kiosk-topic-orbit__ring {
