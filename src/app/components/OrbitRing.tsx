@@ -546,10 +546,12 @@ function drawCentralStyleLabelLine(
   fontSize: number,
   glowColor: string,
 ) {
-  const shadowX = clamp(fontSize * 0.082, 1.3, 3.4);
-  const shadowY = clamp(fontSize * 0.11, 1.6, 4.4);
-  const strokeWidth = clamp(fontSize * 0.06, 1.1, 2.0);
-  const glowBlur = clamp(fontSize * 0.34, 3.5, 13);
+  const shadowX = clamp(fontSize * 0.07, 1.1, 3.0);
+  const shadowY = clamp(fontSize * 0.095, 1.4, 3.8);
+  // Dunnere donkere outline: genoeg voor contrast, maar vreet de witte
+  // glyphs niet aan (dat liet de tekst eerder grijs ogen).
+  const outlineWidth = clamp(fontSize * 0.07, 1.2, 2.2);
+  const glowBlur = clamp(fontSize * 0.26, 3, 9);
 
   context.save();
   setLabelFont(context, fontSize);
@@ -557,33 +559,30 @@ function drawCentralStyleLabelLine(
   context.textBaseline = 'middle';
   context.lineJoin = 'round';
   context.miterLimit = 2;
+  context.globalAlpha = 1;
 
-  // 1) Donkere drop voor diepte/contrast tegen lichte planeet-delen.
+  // 1) Donkere drop-offset voor diepte tegen lichte planeet-delen.
   context.shadowBlur = 0;
   context.fillStyle = CENTRAL_LABEL_SHADOW;
   context.fillText(line, x + shadowX, y + shadowY);
 
-  // 2) Donkere outline rondom de letters — laat het wit overal loskomen van
-  //    de drukke planeet-body, ongeacht de kleur eronder.
-  context.lineWidth = strokeWidth * 2.6;
-  context.strokeStyle = 'rgba(2, 6, 20, 0.9)';
-  context.strokeText(line, x, y);
-
-  // 3) WITTE glow (geen theme-kleur meer) zodat de tekst niet getint/geshade
-  //    raakt maar juist helder oplicht — bovenaan de visuele hiërarchie.
-  context.shadowColor = 'rgba(255, 255, 255, 0.9)';
+  // 2) Zachte witte glow als halo ACHTER de tekst — geeft "oplichtend" gevoel
+  //    zonder de kern te vertroebelen.
+  context.shadowColor = 'rgba(255, 255, 255, 0.85)';
   context.shadowBlur = glowBlur;
-  context.fillStyle = CENTRAL_LABEL_FILL;
-  context.fillText(line, x, y);
-  // Tweede witte pass versterkt de glow → fel, oplichtend wit.
+  context.fillStyle = '#FFFFFF';
   context.fillText(line, x, y);
 
-  // 4) Crisp witte rand + finale witte fill zonder glow.
+  // 3) Donkere contour (dun) voor crisp losmaken van de body.
   context.shadowBlur = 0;
-  context.lineWidth = strokeWidth;
-  context.strokeStyle = 'rgba(255, 255, 255, 1)';
+  context.lineWidth = outlineWidth;
+  context.strokeStyle = 'rgba(2, 6, 20, 0.92)';
   context.strokeText(line, x, y);
-  context.fillStyle = CENTRAL_LABEL_FILL;
+
+  // 4) Finale SOLIDE pure-witte fill bovenop — dit is de dominante,
+  //    crisp #FFFFFF laag. Geen glow, geen tint, volle alpha.
+  context.fillStyle = '#FFFFFF';
+  context.fillText(line, x, y);
   context.fillText(line, x, y);
   context.restore();
 }
