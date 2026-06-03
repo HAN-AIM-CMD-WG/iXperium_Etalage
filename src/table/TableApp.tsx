@@ -50,6 +50,16 @@ function mixHex(hex: string, target: string, amount: number) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+function mixHexRgba(hex: string, target: string, amount: number, alpha: number) {
+  const sourceRgb = hexToRgb(hex);
+  const targetRgb = hexToRgb(target);
+  const t = Math.min(1, Math.max(0, amount));
+  const r = Math.round(sourceRgb.r + (targetRgb.r - sourceRgb.r) * t);
+  const g = Math.round(sourceRgb.g + (targetRgb.g - sourceRgb.g) * t);
+  const b = Math.round(sourceRgb.b + (targetRgb.b - sourceRgb.b) * t);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 function rgbaHex(hex: string, alpha: number) {
   const { r, g, b } = hexToRgb(hex);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -83,9 +93,13 @@ const CentralPlanet = memo(function CentralPlanet({ accentColor = '#8B5CF6' }: {
           style={{
             '--central-accent': accentColor,
             '--central-glow': rgbaHex(accentColor, 0.72),
+            '--central-logo-glow-core': mixHexRgba(accentColor, '#FFFFFF', 0.46, 0.95),
+            '--central-logo-glow-soft': mixHexRgba(accentColor, '#FFFFFF', 0.72, 0.86),
           } as CSSProperties & {
             '--central-accent': string;
             '--central-glow': string;
+            '--central-logo-glow-core': string;
+            '--central-logo-glow-soft': string;
           }}
         >
           <img
