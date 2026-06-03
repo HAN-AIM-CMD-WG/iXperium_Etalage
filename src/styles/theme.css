@@ -793,23 +793,41 @@
 }
 
 [data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark {
+  position: relative;
   max-width: min(25rem, 48vw);
-  filter:
-    drop-shadow(0 1px 0 rgba(255, 255, 255, 0.72))
-    drop-shadow(0 0 12px var(--central-logo-glow-core, rgba(255, 255, 255, 0.84)))
-    drop-shadow(0 0 28px var(--central-logo-glow-soft, rgba(255, 255, 255, 0.62)))
-    drop-shadow(0 12px 24px rgba(7, 24, 95, 0.48));
+  isolation: isolate;
+  filter: drop-shadow(0 10px 22px rgba(7, 24, 95, 0.46));
+}
+
+[data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: 50%;
+  width: min(23.5rem, 108%);
+  height: min(7.8rem, 138%);
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background:
+    radial-gradient(ellipse at center,
+      rgba(255, 255, 255, 0.86) 0%,
+      var(--central-logo-glow-core, rgba(255, 255, 255, 0.8)) 34%,
+      var(--central-logo-glow-soft, rgba(255, 255, 255, 0.48)) 62%,
+      transparent 78%);
+  filter: blur(14px);
+  opacity: 0.92;
+  transform-origin: center;
 }
 
 [data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__logo {
+  position: relative;
+  z-index: 1;
   display: block;
   width: min(21.75rem, 100%);
   height: auto;
   margin: 0 auto;
-  filter:
-    drop-shadow(0 0 4px rgba(255, 255, 255, 0.72))
-    drop-shadow(0 0 13px var(--central-logo-glow-core, rgba(255, 255, 255, 0.86)))
-    drop-shadow(0 0 30px var(--central-logo-glow-soft, rgba(255, 255, 255, 0.64)));
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.76));
   user-select: none;
 }
 
