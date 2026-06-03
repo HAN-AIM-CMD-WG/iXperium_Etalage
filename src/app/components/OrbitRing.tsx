@@ -21,12 +21,12 @@ const ORBIT_ROTATION_DEG = -20;
 const ORBIT_ROTATION = (ORBIT_ROTATION_DEG * Math.PI) / 180;
 const TAU = Math.PI * 2;
 const LABEL_FONT_FAMILY = 'Overpass, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-const MIN_LABEL_FONT_SIZE = 11;
-const MAX_LABEL_FONT_SIZE = 22;
+const MIN_LABEL_FONT_SIZE = 12;
+const MAX_LABEL_FONT_SIZE = 24;
 const VECTOR_INK = '#07185F';
 const VECTOR_CREAM = '#FFF2B8';
 const CENTRAL_LABEL_FILL = '#FFFFFF';
-const CENTRAL_LABEL_SHADOW = 'rgba(7, 24, 95, 0.48)';
+const CENTRAL_LABEL_SHADOW = 'rgba(2, 6, 20, 0.94)';
 const VECTOR_ORBIT_STROKE_WIDTH = 8;
 const VECTOR_ORBIT_STROKE = 'rgba(91, 224, 255, 0.96)';
 
@@ -544,14 +544,11 @@ function drawCentralStyleLabelLine(
   x: number,
   y: number,
   fontSize: number,
-  glowColor: string,
 ) {
-  const shadowX = clamp(fontSize * 0.07, 1.1, 3.0);
-  const shadowY = clamp(fontSize * 0.095, 1.4, 3.8);
-  // Dunnere donkere outline: genoeg voor contrast, maar vreet de witte
-  // glyphs niet aan (dat liet de tekst eerder grijs ogen).
-  const outlineWidth = clamp(fontSize * 0.07, 1.2, 2.2);
-  const glowBlur = clamp(fontSize * 0.26, 3, 9);
+  const shadowX = clamp(fontSize * 0.08, 1.3, 3.4);
+  const shadowY = clamp(fontSize * 0.11, 1.6, 4.2);
+  const outlineWidth = clamp(fontSize * 0.18, 3.1, 5.4);
+  const whiteRimWidth = clamp(fontSize * 0.055, 1.1, 2.2);
 
   context.save();
   setLabelFont(context, fontSize);
@@ -560,28 +557,26 @@ function drawCentralStyleLabelLine(
   context.lineJoin = 'round';
   context.miterLimit = 2;
   context.globalAlpha = 1;
+  context.globalCompositeOperation = 'source-over';
 
   // 1) Donkere drop-offset voor diepte tegen lichte planeet-delen.
   context.shadowBlur = 0;
   context.fillStyle = CENTRAL_LABEL_SHADOW;
   context.fillText(line, x + shadowX, y + shadowY);
 
-  // 2) Zachte witte glow als halo ACHTER de tekst — geeft "oplichtend" gevoel
-  //    zonder de kern te vertroebelen.
-  context.shadowColor = 'rgba(255, 255, 255, 0.85)';
-  context.shadowBlur = glowBlur;
-  context.fillStyle = '#FFFFFF';
-  context.fillText(line, x, y);
-
-  // 3) Donkere contour (dun) voor crisp losmaken van de body.
-  context.shadowBlur = 0;
+  // 2) Zware donkere contour zodat de witte fill op elk planeetvlak loskomt.
   context.lineWidth = outlineWidth;
-  context.strokeStyle = 'rgba(2, 6, 20, 0.92)';
+  context.strokeStyle = 'rgba(1, 4, 16, 0.98)';
   context.strokeText(line, x, y);
 
-  // 4) Finale SOLIDE pure-witte fill bovenop — dit is de dominante,
-  //    crisp #FFFFFF laag. Geen glow, geen tint, volle alpha.
-  context.fillStyle = '#FFFFFF';
+  // 3) Dunne witte rim voorkomt dat de contour de glyph optisch grijs maakt.
+  context.lineWidth = whiteRimWidth;
+  context.strokeStyle = 'rgba(255, 255, 255, 1)';
+  context.strokeText(line, x, y);
+
+  // 4) Finale SOLIDE pure-witte fill bovenop. Dubbele pass geeft prioriteit
+  //    in de visuele hiërarchie zonder layout of animatie te wijzigen.
+  context.fillStyle = CENTRAL_LABEL_FILL;
   context.fillText(line, x, y);
   context.fillText(line, x, y);
   context.restore();
@@ -754,11 +749,6 @@ function drawOrbitingTextBand(
   // Bespaart ~480 strokeText-calls per frame én alle offscreen blur passes.
   context.shadowBlur = 0;
 
-  // Bijna-puur-wit voor maximale leesbaarheid + felheid. Heel licht warm
-  // getint zodat het niet klinisch-koud aanvoelt, maar duidelijk wit.
-  const baseCream = { r: 255, g: 255, b: 255 };
-  const accentCream = { r: 255, g: 250, b: 236 };
-
   while (textCursor < arcLength + repeatedWidth) {
     for (let glyphIndex = 0; glyphIndex < repeatedGlyphs.length; glyphIndex += 1) {
       const { glyph, width } = repeatedGlyphs[glyphIndex];
@@ -798,22 +788,9 @@ function drawOrbitingTextBand(
         );
 
         // --- Kleur per glyph ---
-        // Bullet ✦: pure theme-accent met cream highlight.
-        // Letters: cream-white met theme-tint; mix-amount stijgt met sweepBoost
-        // zodat de letter helderder oogt tijdens de sweep-piek (geen extra
-        // draw-call meer voor een wit-overlay).
-        const isStar = glyph === '✦';
-        let fillColor: string;
-        if (isStar) {
-          // Bullet houdt iets meer theme-kleur als accent.
-          fillColor = mixRgba(planet.node.color, baseCream, 0.7 + sweepBoost * 0.3, 1);
-        } else {
-          // Letters bijna volledig wit (0.92→1.0 richting wit) zodat ze fel
-          // en leesbaar zijn, ongeacht de planeetkleur eronder.
-          const target = glyphIndex % 4 === 0 ? accentCream : baseCream;
-          const mixAmount = 0.92 + sweepBoost * 0.08;
-          fillColor = mixRgba(planet.node.color, target, mixAmount, 1);
-        }
+        // Geen theme-mix meer: alle meedraaiende tekst op orbit-planeten is
+        // puur wit, zodat de labels bovenaan de visuele hiërarchie staan.
+        const fillColor = sweepBoost > 0.2 ? '#FFFFFF' : 'rgba(255, 255, 255, 0.98)';
 
         context.save();
         context.translate(glyphX, glyphY);
@@ -1018,7 +995,7 @@ function drawVectorPlanet(
     const firstLineY = labelCenterY - ((layout.lines.length - 1) * layout.lineHeight) / 2;
     layout.lines.forEach((line, index) => {
       const y = firstLineY + index * layout.lineHeight;
-      drawCentralStyleLabelLine(context, line, planet.x, y, layout.fontSize, planet.node.color);
+      drawCentralStyleLabelLine(context, line, planet.x, y, layout.fontSize);
     });
 
     context.restore();
