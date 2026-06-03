@@ -582,6 +582,28 @@ function drawCentralStyleLabelLine(
   context.restore();
 }
 
+function drawVectorPlanetLabelOverlay(context: CanvasRenderingContext2D, planet: RenderedPlanet) {
+  if (planet.frontVisibility <= 0.2 || planet.radius <= 28) return;
+
+  const layout = getCachedPlanetLabelLayout(context, planet.node, planet.radius, planet.scale);
+  const labelCenterY = planet.y + planet.radius * 0.23;
+  const firstLineY = labelCenterY - ((layout.lines.length - 1) * layout.lineHeight) / 2;
+
+  context.save();
+  context.globalAlpha = 1;
+  context.globalCompositeOperation = 'source-over';
+  context.shadowBlur = 0;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+
+  layout.lines.forEach((line, index) => {
+    const y = firstLineY + index * layout.lineHeight;
+    drawCentralStyleLabelLine(context, line, planet.x, y, layout.fontSize);
+  });
+
+  context.restore();
+}
+
 function getBandLabel(text: string) {
   return text
     .replace(/XR\s*&\s*Human Machine Interaction/gi, 'XR & HMI')
@@ -795,8 +817,8 @@ function drawOrbitingTextBand(
         context.save();
         context.translate(glyphX, glyphY);
         context.rotate(tangentAngle);
-        // Eén globalAlpha-write per glyph; outer band alpha × position fade.
-        context.globalAlpha = alpha * edgeAlpha;
+        // Tekst zelf blijft vol wit; alleen de zachte rand-fade blijft behouden.
+        context.globalAlpha = edgeAlpha;
         context.fillStyle = fillColor;
         context.fillText(glyph, 0, fontSize * 0.04);
         context.restore();
@@ -981,24 +1003,6 @@ function drawVectorPlanet(
     const layout = getCachedPlanetLabelLayout(context, planet.node, planet.radius, planet.scale);
     const labelCenterY = planet.y + planet.radius * 0.23;
     const labelWidth = clamp(layout.maxLineWidth, planet.radius * 0.84, planet.radius * 1.48);
-
-    setLabelFont(context, layout.fontSize);
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-
-    // Label staat bovenaan de visuele hiërarchie: volle alpha (1.0),
-    // onafhankelijk van de depth-dimming van de planeet-body. Zo blijft de
-    // tekst overal even fel, ook op planeten verder naar achter.
-    context.save();
-    context.globalAlpha = 1;
-
-    const firstLineY = labelCenterY - ((layout.lines.length - 1) * layout.lineHeight) / 2;
-    layout.lines.forEach((line, index) => {
-      const y = firstLineY + index * layout.lineHeight;
-      drawCentralStyleLabelLine(context, line, planet.x, y, layout.fontSize);
-    });
-
-    context.restore();
 
     context.save();
     context.shadowBlur = clamp(planet.radius * 0.04, 1.8, 4.5);
@@ -1385,6 +1389,15 @@ export const OrbitRing = memo(function OrbitRing({
           smallestDiff = diff;
           closestNode = planet.node;
         }
+      }
+    }
+
+    if (visualStyle === 'kurzgesagt') {
+      // Tekst-labels worden als laatste canvas-pass getekend. Zo blijven ze
+      // los van de depth/opacity van planeet-bodies en kan er geen latere
+      // planeetlaag meer overheen dimmen.
+      for (const planet of planets) {
+        drawVectorPlanetLabelOverlay(frontContext, planet);
       }
     }
 
