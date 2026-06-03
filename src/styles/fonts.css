@@ -1,0 +1,25 @@
+/* Overpass Bold — projectbreed font.
+   Het .otf-bestand staat in src/assets/fonts zodat Vite het bundelt + hasht
+   en het op elke machine meekomt (touchtafel + kiosk-PC).
+
+   font-weight: 100 900 koppelt deze ene statische (bold) variant aan het
+   volledige gewichtsbereik, zodat alle tekst — ongeacht het opgevraagde
+   font-weight — in Overpass Bold rendert zonder rare synthetische bolding. */
+@font-face {
+  font-family: 'Overpass';
+  src: url('../assets/fonts/overpass-bold.otf') format('opentype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Globale default: alles erft Overpass tenzij expliciet overschreven. */
+:root {
+  --app-font-family: 'Overpass', ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+html,
+body {
+  font-family: var(--app-font-family);
+}

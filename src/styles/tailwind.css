@@ -2,3 +2,14 @@
 @source '../**/*.{js,ts,jsx,tsx}';
 
 @import 'tw-animate-css';
+
+/* Overpass als projectbreed default font. In Tailwind v4 stuurt
+   --default-font-family wat preflight op <html> zet, en --font-sans wat de
+   `font-sans` utility gebruikt. Beide op Overpass zetten zorgt dat alles het
+   font erft, ook de Tailwind preflight (die anders fonts.css zou overschrijven). */
+@theme {
+  --default-font-family: 'Overpass', ui-sans-serif, system-ui, -apple-system,
+    'Segoe UI', sans-serif;
+  --font-sans: 'Overpass', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
+}
