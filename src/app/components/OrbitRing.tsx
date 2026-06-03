@@ -565,17 +565,20 @@ function drawCentralStyleLabelLine(
 
   // 2) Donkere outline rondom de letters — laat het wit overal loskomen van
   //    de drukke planeet-body, ongeacht de kleur eronder.
-  context.lineWidth = strokeWidth * 2.4;
-  context.strokeStyle = 'rgba(2, 6, 20, 0.78)';
+  context.lineWidth = strokeWidth * 2.6;
+  context.strokeStyle = 'rgba(2, 6, 20, 0.9)';
   context.strokeText(line, x, y);
 
-  // 3) Zachte theme-glow + helder-wit vlak.
-  context.shadowColor = rgba(glowColor, 0.65);
+  // 3) WITTE glow (geen theme-kleur meer) zodat de tekst niet getint/geshade
+  //    raakt maar juist helder oplicht — bovenaan de visuele hiërarchie.
+  context.shadowColor = 'rgba(255, 255, 255, 0.9)';
   context.shadowBlur = glowBlur;
   context.fillStyle = CENTRAL_LABEL_FILL;
   context.fillText(line, x, y);
+  // Tweede witte pass versterkt de glow → fel, oplichtend wit.
+  context.fillText(line, x, y);
 
-  // 4) Dunne witte rand voor crisp, fel resultaat.
+  // 4) Crisp witte rand + finale witte fill zonder glow.
   context.shadowBlur = 0;
   context.lineWidth = strokeWidth;
   context.strokeStyle = 'rgba(255, 255, 255, 1)';
@@ -1007,12 +1010,11 @@ function drawVectorPlanet(
     context.textAlign = 'center';
     context.textBaseline = 'middle';
 
-    // Label-alpha boost: de planeet-body wordt door depth gedimd
-    // (globalAlpha = layerOpacity), maar de tekst moet juist fel + leesbaar
-    // blijven. We tillen de alpha op naar een hoge ondergrond zodat ook
-    // planeten verder naar achter een helder-wit label tonen.
+    // Label staat bovenaan de visuele hiërarchie: volle alpha (1.0),
+    // onafhankelijk van de depth-dimming van de planeet-body. Zo blijft de
+    // tekst overal even fel, ook op planeten verder naar achter.
     context.save();
-    context.globalAlpha = Math.min(1, layerOpacity * 0.4 + 0.6);
+    context.globalAlpha = 1;
 
     const firstLineY = labelCenterY - ((layout.lines.length - 1) * layout.lineHeight) / 2;
     layout.lines.forEach((line, index) => {
