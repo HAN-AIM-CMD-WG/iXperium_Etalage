@@ -11,6 +11,7 @@ import { ContentView } from '../app/components/ContentView';
 import { NavigationButton } from '../app/components/NavigationButton';
 import { SpaceCanvas } from '../app/components/scene/SpaceCanvas';
 import { PerfStats } from '../app/components/scene/PerfStats';
+import ixperiumLogoUrl from '../../zooi/Ixperiumlogo.png';
 
 const TABLE_SCENE_SCALE = 0.88;
 const TABLE_MAIN_ORBIT = {
@@ -87,23 +88,12 @@ const CentralPlanet = memo(function CentralPlanet({ accentColor = '#8B5CF6' }: {
             '--central-glow': string;
           }}
         >
-          <svg
+          <img
             className="ixperium-core-mark__logo"
-            viewBox="0 0 520 156"
-            role="img"
-            aria-labelledby="ixperium-core-logo-title"
-          >
-            <title id="ixperium-core-logo-title">iXPERIUM Centre of Expertise</title>
-            <rect className="ixperium-core-mark__logo-panel" x="2" y="2" width="516" height="152" rx="4" />
-            <g className="ixperium-core-mark__wordmark" aria-hidden="true">
-              <circle cx="31" cy="29" r="13" />
-              <path d="M18 53H44V124H18Z" />
-              <text x="55" y="124">XPERIUM</text>
-            </g>
-            <text className="ixperium-core-mark__descriptor" x="310" y="149" textAnchor="middle" aria-hidden="true">
-              CENTRE OF EXPERTISE
-            </text>
-          </svg>
+            src={ixperiumLogoUrl}
+            alt="iXperium Centre of Expertise"
+            draggable={false}
+          />
         </div>
       </motion.div>
     </motion.div>

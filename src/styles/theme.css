@@ -793,7 +793,7 @@
 }
 
 [data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark {
-  max-width: min(24.5rem, 47vw);
+  max-width: min(25rem, 48vw);
   filter:
     drop-shadow(0 2px 0 rgba(255, 255, 255, 0.55))
     drop-shadow(0 9px 18px rgba(7, 24, 95, 0.44));
@@ -801,12 +801,10 @@
 
 [data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__logo {
   display: block;
-  width: min(22rem, 104%);
+  width: min(21.75rem, 100%);
   height: auto;
   margin: 0 auto;
-  color: var(--ixp-purple);
-  overflow: visible;
-  paint-order: stroke fill;
+  user-select: none;
 }
 
 [data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__logo-panel {
