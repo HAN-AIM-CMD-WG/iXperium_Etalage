@@ -1,4 +1,5 @@
 import { memo, useCallback, useEffect, useId, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { ContentNode } from '../data/content';
 import {
   DEFAULT_VISUAL_STYLE,
@@ -21,8 +22,8 @@ const ORBIT_ROTATION_DEG = -20;
 const ORBIT_ROTATION = (ORBIT_ROTATION_DEG * Math.PI) / 180;
 const TAU = Math.PI * 2;
 const LABEL_FONT_FAMILY = 'Overpass, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-const MIN_LABEL_FONT_SIZE = 12;
-const MAX_LABEL_FONT_SIZE = 24;
+const MIN_LABEL_FONT_SIZE = 16;
+const MAX_LABEL_FONT_SIZE = 28;
 const VECTOR_INK = '#07185F';
 const VECTOR_CREAM = '#FFF2B8';
 const CENTRAL_LABEL_FILL = '#FFFFFF';
@@ -545,10 +546,10 @@ function drawCentralStyleLabelLine(
   y: number,
   fontSize: number,
 ) {
-  const shadowX = clamp(fontSize * 0.08, 1.3, 3.4);
-  const shadowY = clamp(fontSize * 0.11, 1.6, 4.2);
-  const outlineWidth = clamp(fontSize * 0.18, 3.1, 5.4);
-  const whiteRimWidth = clamp(fontSize * 0.055, 1.1, 2.2);
+  const shadowX = clamp(fontSize * 0.05, 0.8, 2.2);
+  const shadowY = clamp(fontSize * 0.07, 1.1, 2.8);
+  const outlineWidth = clamp(fontSize * 0.105, 1.6, 3.2);
+  const whiteRimWidth = clamp(fontSize * 0.08, 1.2, 2.4);
 
   context.save();
   setLabelFont(context, fontSize);
@@ -564,7 +565,8 @@ function drawCentralStyleLabelLine(
   context.fillStyle = CENTRAL_LABEL_SHADOW;
   context.fillText(line, x + shadowX, y + shadowY);
 
-  // 2) Zware donkere contour zodat de witte fill op elk planeetvlak loskomt.
+  // 2) Donkere contour voor contrast, bewust dun genoeg zodat de glyph-fill
+  //    niet optisch grijs/donker wordt.
   context.lineWidth = outlineWidth;
   context.strokeStyle = 'rgba(1, 4, 16, 0.98)';
   context.strokeText(line, x, y);
@@ -574,10 +576,13 @@ function drawCentralStyleLabelLine(
   context.strokeStyle = 'rgba(255, 255, 255, 1)';
   context.strokeText(line, x, y);
 
-  // 4) Finale SOLIDE pure-witte fill bovenop. Dubbele pass geeft prioriteit
-  //    in de visuele hiërarchie zonder layout of animatie te wijzigen.
+  // 4) Finale SOLIDE pure-witte fill bovenop. Korte witte glow + dubbele pass
+  //    houdt de tekst fel wit, ook op donkere of drukke planeetvlakken.
+  context.shadowBlur = clamp(fontSize * 0.09, 1.2, 2.8);
+  context.shadowColor = 'rgba(255, 255, 255, 0.46)';
   context.fillStyle = CENTRAL_LABEL_FILL;
   context.fillText(line, x, y);
+  context.shadowBlur = 0;
   context.fillText(line, x, y);
   context.restore();
 }
@@ -1033,6 +1038,7 @@ export const OrbitRing = memo(function OrbitRing({
 }: OrbitRingProps) {
   const backCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const frontCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const labelCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const stageSizeRef = useRef({ width: 1, height: 1 });
@@ -1300,6 +1306,7 @@ export const OrbitRing = memo(function OrbitRing({
     backContext: CanvasRenderingContext2D,
     frontCanvas: HTMLCanvasElement,
     frontContext: CanvasRenderingContext2D,
+    labelContext: CanvasRenderingContext2D,
   ) => {
     const currentNodes = nodesRef.current;
     const { width, height } = stageSizeRef.current;
@@ -1317,6 +1324,7 @@ export const OrbitRing = memo(function OrbitRing({
 
     backContext.clearRect(0, 0, width, height);
     frontContext.clearRect(0, 0, width, height);
+    labelContext.clearRect(0, 0, width, height);
 
     if (currentNodes.length === 0) {
       renderedPlanetsRef.current = [];
@@ -1393,11 +1401,11 @@ export const OrbitRing = memo(function OrbitRing({
     }
 
     if (visualStyle === 'kurzgesagt') {
-      // Tekst-labels worden als laatste canvas-pass getekend. Zo blijven ze
-      // los van de depth/opacity van planeet-bodies en kan er geen latere
-      // planeetlaag meer overheen dimmen.
+      // Tekst-labels staan op een eigen canvaslaag boven de planeetlagen.
+      // Daardoor kunnen planeet-depth, centrale planeet en latere canvas-passes
+      // de tekst niet optisch dimmen. Alleen tekst wordt op deze laag getekend.
       for (const planet of planets) {
-        drawVectorPlanetLabelOverlay(frontContext, planet);
+        drawVectorPlanetLabelOverlay(labelContext, planet);
       }
     }
 
@@ -1439,6 +1447,7 @@ export const OrbitRing = memo(function OrbitRing({
   useEffect(() => {
     const backCanvas = backCanvasRef.current;
     const frontCanvas = frontCanvasRef.current;
+    const labelCanvas = labelCanvasRef.current;
     const wrapper = wrapperRef.current;
     const canvasContextOptions: CanvasRenderingContext2DSettings = {
       alpha: true,
@@ -1446,7 +1455,8 @@ export const OrbitRing = memo(function OrbitRing({
     };
     const backContext = backCanvas?.getContext('2d', canvasContextOptions);
     const frontContext = frontCanvas?.getContext('2d', canvasContextOptions);
-    if (!backCanvas || !frontCanvas || !wrapper || !backContext || !frontContext) return;
+    const labelContext = labelCanvas?.getContext('2d', canvasContextOptions);
+    if (!backCanvas || !frontCanvas || !labelCanvas || !wrapper || !backContext || !frontContext || !labelContext) return;
 
     let width = 0;
     let height = 0;
@@ -1475,7 +1485,7 @@ export const OrbitRing = memo(function OrbitRing({
         width = nextWidth;
         height = nextHeight;
         stageSizeRef.current = { width, height };
-        for (const canvas of [backCanvas, frontCanvas]) {
+        for (const canvas of [backCanvas, frontCanvas, labelCanvas]) {
           canvas.width = Math.floor(width * pixelRatio);
           canvas.height = Math.floor(height * pixelRatio);
           canvas.style.width = `${width}px`;
@@ -1483,6 +1493,7 @@ export const OrbitRing = memo(function OrbitRing({
         }
         backContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
         frontContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        labelContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
       }
 
       // Layout-metrics updaten ook als size niet wijzigt — de canvas-positie
@@ -1525,7 +1536,7 @@ export const OrbitRing = memo(function OrbitRing({
         }
       }
 
-      drawOrbit(backCanvas, backContext, frontCanvas, frontContext);
+      drawOrbit(backCanvas, backContext, frontCanvas, frontContext, labelContext);
       animationFrameRef.current = requestAnimationFrame(tick);
     };
 
@@ -1678,47 +1689,67 @@ export const OrbitRing = memo(function OrbitRing({
     </svg>
   );
 
-  return (
-    <div
-      ref={wrapperRef}
-      className="absolute inset-0 cursor-grab active:cursor-grabbing touch-none select-none"
+  const labelLayer = typeof document === 'undefined' ? null : createPortal(
+    <canvas
+      ref={labelCanvasRef}
+      className="fixed inset-0 h-full w-full pointer-events-none"
       style={{
-        width: '100%',
-        height: '100%',
-        // GPU compositor hints: isoleer paint/layout zodat motion-animaties in
-        // de omliggende DOM (KurzgesagtBackdrop etc.) niet de canvas-laag
-        // mee-invalideren. transform: translateZ(0) promoot dit blok tot een
-        // eigen GPU-laag.
-        contain: 'layout style paint',
+        zIndex: visualStyle === 'kurzgesagt' ? 120 : 45,
+        opacity: 1,
+        mixBlendMode: 'normal',
+        filter: 'none',
+        willChange: 'transform',
         transform: 'translateZ(0)',
       }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-    >
-      {visualStyle === 'kurzgesagt' && (
-        <>
-          {renderVectorOrbitSegment(vectorOrbitBackPath, 34, true)}
-          {renderVectorOrbitSegment(vectorOrbitFrontPath, 55)}
-        </>
-      )}
-      <canvas
-        ref={backCanvasRef}
-        className="absolute inset-0 h-full w-full pointer-events-none"
-        style={{ zIndex: 35, willChange: 'transform', transform: 'translateZ(0)' }}
-        aria-hidden="true"
-      />
-      <canvas
-        ref={frontCanvasRef}
-        className="absolute inset-0 h-full w-full pointer-events-none"
+      aria-hidden="true"
+    />,
+    document.body,
+  );
+
+  return (
+    <>
+      <div
+        ref={wrapperRef}
+        className="absolute inset-0 cursor-grab active:cursor-grabbing touch-none select-none"
         style={{
-          zIndex: visualStyle === 'kurzgesagt' ? 56 : 44,
-          willChange: 'transform',
+          width: '100%',
+          height: '100%',
+          // GPU compositor hints: isoleer paint/layout zodat motion-animaties in
+          // de omliggende DOM (KurzgesagtBackdrop etc.) niet de canvas-laag
+          // mee-invalideren. transform: translateZ(0) promoot dit blok tot een
+          // eigen GPU-laag.
+          contain: 'layout style paint',
           transform: 'translateZ(0)',
         }}
-        aria-label="Orbit navigation"
-      />
-    </div>
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
+        {visualStyle === 'kurzgesagt' && (
+          <>
+            {renderVectorOrbitSegment(vectorOrbitBackPath, 34, true)}
+            {renderVectorOrbitSegment(vectorOrbitFrontPath, 55)}
+          </>
+        )}
+        <canvas
+          ref={backCanvasRef}
+          className="absolute inset-0 h-full w-full pointer-events-none"
+          style={{ zIndex: 35, willChange: 'transform', transform: 'translateZ(0)' }}
+          aria-hidden="true"
+        />
+        <canvas
+          ref={frontCanvasRef}
+          className="absolute inset-0 h-full w-full pointer-events-none"
+          style={{
+            zIndex: visualStyle === 'kurzgesagt' ? 56 : 44,
+            willChange: 'transform',
+            transform: 'translateZ(0)',
+          }}
+          aria-label="Orbit navigation"
+        />
+      </div>
+      {labelLayer}
+    </>
   );
 });
