@@ -793,40 +793,49 @@
 }
 
 [data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark {
-  max-width: min(23rem, 43vw);
+  max-width: min(24.5rem, 47vw);
   filter:
-    drop-shadow(0 3px 0 rgba(255, 255, 255, 0.42))
-    drop-shadow(0 9px 18px rgba(7, 24, 95, 0.42));
+    drop-shadow(0 2px 0 rgba(255, 255, 255, 0.55))
+    drop-shadow(0 9px 18px rgba(7, 24, 95, 0.44));
 }
 
 [data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__logo {
-  margin: 0;
+  display: block;
+  width: min(22rem, 104%);
+  height: auto;
+  margin: 0 auto;
   color: var(--ixp-purple);
-  font-family: var(--ixp-font-heading);
-  font-size: clamp(2.65rem, 5vw, 4rem);
-  font-weight: 700;
-  line-height: 0.78;
-  letter-spacing: -0.055em;
-  text-shadow:
-    0 1px 0 #ffffff,
-    0 0 16px rgba(246, 240, 29, 0.54),
-    4px 5px 0 rgba(7, 24, 95, 0.32);
-  -webkit-text-stroke: 1.05px rgba(255, 255, 255, 0.92);
+  overflow: visible;
+  paint-order: stroke fill;
 }
 
-[data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__tagline {
-  margin: 0.42rem 0 0;
-  color: var(--ixp-purple);
+[data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__logo-panel {
+  fill: rgba(255, 255, 255, 0.9);
+  stroke: rgba(255, 255, 255, 0.82);
+  stroke-width: 4px;
+}
+
+[data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__wordmark {
+  fill: currentColor;
+  stroke: none;
+  stroke-linejoin: round;
+}
+
+[data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__wordmark text {
   font-family: var(--ixp-font-heading);
-  font-size: clamp(0.68rem, 1.24vw, 0.98rem);
   font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-shadow:
-    0 1px 0 #ffffff,
-    2px 2px 0 rgba(7, 24, 95, 0.24);
-  -webkit-text-stroke: 0.35px rgba(255, 255, 255, 0.85);
+  font-size: 106px;
+  letter-spacing: -5.6px;
+}
+
+[data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__descriptor {
+  fill: currentColor;
+  stroke: none;
+  font-family: var(--ixp-font-heading);
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: 2.3px;
+  paint-order: stroke fill;
 }
 
 [data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__rule {

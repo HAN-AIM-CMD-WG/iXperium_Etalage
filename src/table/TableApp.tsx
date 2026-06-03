@@ -87,12 +87,23 @@ const CentralPlanet = memo(function CentralPlanet({ accentColor = '#8B5CF6' }: {
             '--central-glow': string;
           }}
         >
-          <h1 className="ixperium-core-mark__logo" aria-label="iXperium Centre of Expertise">
-            iXPERIUM
-          </h1>
-          <p className="ixperium-core-mark__tagline">Centre of Expertise</p>
-          <div className="ixperium-core-mark__rule" />
-          <p className="ixperium-core-mark__subline">Smart Industry touchtafel</p>
+          <svg
+            className="ixperium-core-mark__logo"
+            viewBox="0 0 520 156"
+            role="img"
+            aria-labelledby="ixperium-core-logo-title"
+          >
+            <title id="ixperium-core-logo-title">iXPERIUM Centre of Expertise</title>
+            <rect className="ixperium-core-mark__logo-panel" x="2" y="2" width="516" height="152" rx="4" />
+            <g className="ixperium-core-mark__wordmark" aria-hidden="true">
+              <circle cx="31" cy="29" r="13" />
+              <path d="M18 53H44V124H18Z" />
+              <text x="55" y="124">XPERIUM</text>
+            </g>
+            <text className="ixperium-core-mark__descriptor" x="310" y="149" textAnchor="middle" aria-hidden="true">
+              CENTRE OF EXPERTISE
+            </text>
+          </svg>
         </div>
       </motion.div>
     </motion.div>
