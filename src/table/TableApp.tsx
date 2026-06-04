@@ -1,14 +1,13 @@
 import { startTransition, useState, useCallback, useMemo, memo, useRef, type CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { RotateCcw } from 'lucide-react';
 import { contentData, type ContentNode } from '../shared/content';
 import type { ConnectionHealth } from '../shared/protocol';
 import { DEFAULT_VISUAL_STYLE } from '../shared/visualStyle';
 import { useNavigationSocket } from '../shared/useNavigationSocket';
 import { Planet } from '../app/components/Planet';
-import { OrbitRing } from '../app/components/OrbitRing';
+import { OrbitRing, type PlanetSelectOrigin } from '../app/components/OrbitRing';
 import { ContentView } from '../app/components/ContentView';
-import { NavigationButton } from '../app/components/NavigationButton';
+import { FlyingPlanet, type FlyMode } from '../app/components/FlyingPlanet';
 import { SpaceCanvas } from '../app/components/scene/SpaceCanvas';
 import { PerfStats } from '../app/components/scene/PerfStats';
 import ixperiumLogoUrl from '../../zooi/Ixperiumlogo.png';
@@ -24,6 +23,9 @@ const TABLE_SUBMENU_ORBIT = {
   radiusY: 190 * TABLE_SCENE_SCALE,
   centerMaskRadius: 174 * TABLE_SCENE_SCALE,
 };
+// Diameter (px) waar een fly-to-center planeet naartoe schaalt — ongeveer de
+// grootte van de centrum-planeet.
+const CENTER_FLY_DIAMETER = 300;
 
 function hexToRgb(hex: string) {
   const normalized = hex.replace('#', '');
@@ -428,45 +430,6 @@ const FocusPreviewPanel = memo(function FocusPreviewPanel({
   );
 });
 
-const TouchInstructionDock = memo(function TouchInstructionDock({
-  level,
-  onHome,
-}: {
-  level: NavigationLevel;
-  onHome: () => void;
-}) {
-  return (
-    <div className="pointer-events-auto fixed bottom-24 left-1/2 z-[95] flex w-[min(40rem,calc(100vw-2rem))] -translate-x-1/2 items-center justify-between gap-4 rounded-[1.65rem] border border-white/15 bg-[#0a121a]/85 p-3 text-white shadow-[0_22px_74px_rgba(0,0,0,0.34)] sm:bottom-8">
-      <div className="flex min-w-0 items-center gap-3 px-2">
-        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/[0.06]">
-          <RotateCcw className="h-5 w-5" aria-hidden="true" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-extrabold leading-4 text-white">Draai om te verkennen</p>
-          <p className="mt-1 text-xs font-medium leading-4 text-white/50">
-            {level === 'main' ? 'Tik op een planeet voor de route' : 'Tik op een onderwerp voor detail'}
-          </p>
-        </div>
-      </div>
-
-      <div className="hidden h-11 w-px bg-white/10 sm:block" />
-
-      <div className="flex flex-shrink-0 gap-2">
-        <button
-          type="button"
-          onClick={onHome}
-          className="rounded-[1.125rem] bg-white/[0.10] px-5 py-3 text-sm font-bold text-white transition hover:bg-white/[0.16] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-        >
-          Home
-        </button>
-        <div className="rounded-[1.125rem] bg-white px-5 py-3 text-sm font-extrabold text-[#071016]">
-          {level === 'detail' ? 'Detail open' : 'Open route'}
-        </div>
-      </div>
-    </div>
-  );
-});
-
 export function TableApp() {
   const { connected, health, publishNavigation, resetNavigation } = useNavigationSocket('table');
   const [navState, setNavState] = useState<NavigationState>({
@@ -477,13 +440,24 @@ export function TableApp() {
 
   const [currentTheme, setCurrentTheme] = useState('main');
   const [nearestPlanet, setNearestPlanet] = useState<ContentNode | null>(null);
+  // Transiente fly-animatie state. Wanneer gezet rendert de FlyingPlanet overlay.
+  const [flyState, setFlyState] = useState<{
+    node: ContentNode;
+    origin: PlanetSelectOrigin;
+    mode: FlyMode;
+  } | null>(null);
   const visualStyle = DEFAULT_VISUAL_STYLE;
 
-  const handleSelectMain = useCallback((node: ContentNode) => {
+  const handleSelectMain = useCallback((node: ContentNode, origin?: PlanetSelectOrigin) => {
+    // Route → centrum: laat de planeet naar het midden vliegen en commit
+    // meteen de submenu-state zodat de centrum-planeet + kinderen verschijnen.
+    if (origin) {
+      setFlyState({ node, origin, mode: 'toCenter' });
+    }
     setNavState({
       level: 'submenu',
       selectedMain: node,
-      selectedSub: null
+      selectedSub: null,
     });
     setCurrentTheme(node.theme);
     publishNavigation({
@@ -494,22 +468,31 @@ export function TableApp() {
     });
   }, [publishNavigation]);
 
-  const handleSelectSub = useCallback((node: ContentNode) => {
+  const handleSelectSub = useCallback((node: ContentNode, origin?: PlanetSelectOrigin) => {
     if (!navState.selectedMain) return;
 
-    setNavState(prev => ({
-      level: 'detail',
-      selectedMain: prev.selectedMain,
-      selectedSub: node
-    }));
+    // Sub-onderwerp → cross-screen handoff: de planeet vliegt omhoog van de
+    // tafel af. De tafel blijft op submenu (zodat je verder kunt verkennen);
+    // de kiosk ontvangt 'detail' via de websocket en speelt zijn eigen
+    // rise-from-bottom + expand animatie af.
+    if (origin) {
+      setFlyState({ node, origin, mode: 'upOff' });
+    }
     publishNavigation({
       level: 'detail',
       mainId: navState.selectedMain.id,
       subId: node.id,
       theme: node.theme,
       visualStyle: DEFAULT_VISUAL_STYLE,
+      // Stuur de planeet-snapshot mee zodat de kiosk exact dezelfde planeet
+      // van onder laat opstijgen.
+      planetImage: origin?.image,
     });
   }, [navState.selectedMain, publishNavigation]);
+
+  const handleFlyComplete = useCallback(() => {
+    setFlyState(null);
+  }, []);
 
   const focusThrottleRef = useRef(0);
 
@@ -540,28 +523,6 @@ export function TableApp() {
     setNearestPlanet(null);
     resetNavigation();
   }, [resetNavigation]);
-
-  const handleBack = useCallback(() => {
-    if (navState.level === 'detail' && navState.selectedMain) {
-      setNavState({
-        level: 'submenu',
-        selectedMain: navState.selectedMain,
-        selectedSub: null
-      });
-      setCurrentTheme(navState.selectedMain.theme);
-      publishNavigation({
-        level: 'submenu',
-        mainId: navState.selectedMain.id,
-        theme: navState.selectedMain.theme,
-        visualStyle: DEFAULT_VISUAL_STYLE,
-      });
-      return;
-    }
-
-    if (navState.level === 'submenu') {
-      handleHome();
-    }
-  }, [handleHome, navState, publishNavigation]);
 
   const relatedNodes = useMemo(() => {
     if (navState.level === 'detail' && navState.selectedMain && navState.selectedSub) {
@@ -596,7 +557,6 @@ export function TableApp() {
       <ConnectionPill connected={connected} health={health} />
       <RouteCommandPanel activeNode={activeRouteNode} onSelectNode={handleSelectMain} />
       <FocusPreviewPanel focusNode={focusNode} level={navState.level} />
-      <TouchInstructionDock level={navState.level} onHome={handleHome} />
 
       {/* iXperium branding */}
       <motion.div
@@ -614,12 +574,18 @@ export function TableApp() {
         </div>
       </motion.div>
 
-      {/* Navigation buttons */}
+      {/* Fly-to-center / fly-up overlay — de getapte planeet zelf verplaatst
+          + vergroot (de orbit-planeet is verborgen via hiddenNodeId). */}
       <AnimatePresence>
-        {navState.level !== 'main' && (
-          <NavigationButton
-            onClick={navState.level === 'submenu' ? handleBack : handleHome}
-            type={navState.level === 'submenu' ? 'back' : 'home'}
+        {flyState && (
+          <FlyingPlanet
+            key={`${flyState.mode}-${flyState.node.id}`}
+            origin={flyState.origin}
+            color={flyState.node.color}
+            mode={flyState.mode}
+            centerDiameter={CENTER_FLY_DIAMETER}
+            title={getCompactTitle(flyState.node.title)}
+            onComplete={handleFlyComplete}
           />
         )}
       </AnimatePresence>
@@ -659,6 +625,7 @@ export function TableApp() {
               centerOffsetX={20}
               centerMaskRadius={TABLE_MAIN_ORBIT.centerMaskRadius}
               visualStyle={visualStyle}
+              hiddenNodeId={flyState?.mode === 'toCenter' ? flyState.node.id : null}
             />
           </motion.div>
         )}
@@ -686,12 +653,13 @@ export function TableApp() {
               </h2>
             </motion.div>
 
-            {/* Center planet */}
+            {/* Center planet — met terug-knop boven de titel */}
             <Planet
               node={navState.selectedMain}
               angle={0}
               isCenter
               visualStyle={visualStyle}
+              onBack={handleHome}
             />
 
             {/* Submenu orbit */}
@@ -704,6 +672,7 @@ export function TableApp() {
                 centerOffsetX={20}
                 centerMaskRadius={TABLE_SUBMENU_ORBIT.centerMaskRadius}
                 visualStyle={visualStyle}
+                hiddenNodeId={flyState?.mode === 'upOff' ? flyState.node.id : null}
               />
             )}
           </motion.div>

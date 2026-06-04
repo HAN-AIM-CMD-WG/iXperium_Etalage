@@ -17,6 +17,7 @@ import {
 
 const port = Number(process.env.PORT ?? 3001);
 const host = process.env.HOST ?? '0.0.0.0';
+const maxNavigationPayloadBytes = 5 * 1024 * 1024;
 
 const httpServer = createServer((_request, response) => {
   response.writeHead(200, { 'content-type': 'application/json' });
@@ -28,6 +29,7 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEve
     origin: '*',
     methods: ['GET', 'POST'],
   },
+  maxHttpBufferSize: maxNavigationPayloadBytes,
   pingInterval: 10_000,
   pingTimeout: 5_000,
 });
@@ -102,6 +104,7 @@ io.on('connection', (socket) => {
       subId: payload.subId,
       theme: payload.theme ?? 'main',
       visualStyle: INITIAL_NAVIGATION_STATE.visualStyle,
+      planetImage: payload.planetImage,
       seq: payload.seq,
       sentAt: payload.sentAt,
     };

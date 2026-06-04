@@ -20,6 +20,9 @@ export interface NavigationSetEvent {
   subId?: string;
   theme?: string;
   visualStyle?: AppVisualStyle;
+  /** Snapshot (dataURL) van de planeet die op de tafel naar de kiosk vloog,
+   *  zodat de kiosk-handoff exact dezelfde planeet toont. Transient/optioneel. */
+  planetImage?: string;
   seq: number;
   sentAt: number;
 }
@@ -112,6 +115,7 @@ export function isNavigationSetEvent(value: unknown): value is NavigationSetEven
   if (candidate.subId !== undefined && typeof candidate.subId !== 'string') return false;
   if (candidate.theme !== undefined && typeof candidate.theme !== 'string') return false;
   if (candidate.visualStyle !== undefined && !isAppVisualStyle(candidate.visualStyle)) return false;
+  if (candidate.planetImage !== undefined && typeof candidate.planetImage !== 'string') return false;
 
   if (candidate.level === 'main' && (candidate.mainId || candidate.subId)) return false;
   if (candidate.level === 'submenu' && !candidate.mainId) return false;

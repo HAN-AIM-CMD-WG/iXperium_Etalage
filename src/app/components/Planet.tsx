@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { memo, useMemo, type CSSProperties } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { ContentNode } from '../data/content';
 import { ease } from '../motion/easing';
 import {
@@ -24,6 +25,8 @@ interface PlanetProps {
   angle: number;
   isCenter?: boolean;
   onSelect?: () => void;
+  /** Terug-knop bovenaan de centrum-planeet (alleen relevant als isCenter). */
+  onBack?: () => void;
   radiusX?: number;
   radiusY?: number;
   floatDelay?: number;
@@ -35,6 +38,7 @@ export const Planet = memo(function Planet({
   angle,
   isCenter = false,
   onSelect,
+  onBack,
   radiusX = 400,
   radiusY = 200,
   floatDelay = 0,
@@ -71,6 +75,25 @@ export const Planet = memo(function Planet({
             className="central-planet-label relative z-10 w-[min(18.5rem,42vw)] text-center"
             style={labelStyle}
           >
+            {/* Terug-knop — boven de titel op de planeet. Vervangt de oude
+                back-knop linksboven. pointer-events-auto omdat de planeet zelf
+                pointer-events-none is. */}
+            {onBack && (
+              <motion.button
+                type="button"
+                onClick={onBack}
+                className="pointer-events-auto mx-auto mb-4 flex items-center gap-2 rounded-full border border-white/25 bg-white/[0.12] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+                whileTap={{ scale: 0.94 }}
+                style={{ boxShadow: `0 0 22px ${node.color}55, 0 8px 24px rgba(0,0,0,0.35)` }}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span>Terug</span>
+              </motion.button>
+            )}
+
             {/* Thema-accent puls — bovenaan, glowend in de routekleur */}
             <motion.div
               className="mx-auto h-[7px] w-[7px] rounded-full"

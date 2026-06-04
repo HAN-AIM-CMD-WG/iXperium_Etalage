@@ -1,4 +1,4 @@
-import { memo, useMemo, type CSSProperties } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { PerfStats } from '../app/components/scene/PerfStats';
 import { contentData, type ContentNode } from '../shared/content';
@@ -430,6 +430,78 @@ const KioskInfoPanel = memo(function KioskInfoPanel({
   );
 });
 
+const HANDOFF_SPHERE = 320;
+
+/**
+ * Cross-screen handoff entry. Wanneer de touchtafel een sub-onderwerp omhoog
+ * van het scherm laat vliegen, verschijnt hier — precies dan — een themed bol
+ * die van onder het scherm opstijgt naar het midden en daar vervaagt, terwijl
+ * de detailpagina eronder "uitklapt". De rise heeft een kleine delay zodat hij
+ * begint op het moment dat de planeet de tafel net verlaat.
+ */
+const KioskHandoffEntry = memo(function KioskHandoffEntry({
+  color,
+  image,
+  onComplete,
+}: {
+  color: string;
+  image?: string | null;
+  onComplete: () => void;
+}) {
+  const centerY = typeof window !== 'undefined' ? window.innerHeight / 2 - HANDOFF_SPHERE / 2 : 0;
+  const belowY = typeof window !== 'undefined' ? window.innerHeight + HANDOFF_SPHERE : 1200;
+
+  return (
+    <motion.div
+      aria-hidden
+      style={{
+        position: 'fixed',
+        left: '50%',
+        top: 0,
+        width: HANDOFF_SPHERE,
+        height: HANDOFF_SPHERE,
+        marginLeft: -HANDOFF_SPHERE / 2,
+        zIndex: 40,
+        pointerEvents: 'none',
+        willChange: 'transform',
+      }}
+      initial={{ y: belowY, scale: 0.55, opacity: 0 }}
+      animate={{ y: centerY, scale: 1, opacity: [0, 1, 1, 0] }}
+      transition={{
+        // ~0.5s delay: begint als de tafel-planeet net het scherm verlaat.
+        y: { type: 'spring', stiffness: 80, damping: 15, mass: 0.9, delay: 0.5 },
+        scale: { type: 'spring', stiffness: 80, damping: 15, delay: 0.5 },
+        opacity: { duration: 1.15, times: [0, 0.22, 0.7, 1], delay: 0.5 },
+      }}
+      onAnimationComplete={onComplete}
+    >
+      {image ? (
+        // Exact dezelfde planeet-snapshot die van de tafel opsteeg.
+        <img
+          src={image}
+          alt=""
+          draggable={false}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+        />
+      ) : (
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: '50%',
+            background: `
+              radial-gradient(circle at 34% 28%, rgba(255,255,255,0.85) 0%, transparent 38%),
+              radial-gradient(circle at 72% 80%, rgba(0,0,0,0.42) 0%, transparent 60%),
+              linear-gradient(140deg, ${color} 0%, ${color}66 100%)
+            `,
+            boxShadow: `0 0 80px ${color}aa, 0 0 32px ${color}, inset -18px -20px 46px rgba(0,0,0,0.42)`,
+          }}
+        />
+      )}
+    </motion.div>
+  );
+});
+
 export function KioskApp() {
   const { connected, health, lastSnapshot } = useNavigationSocket('kiosk');
 
@@ -458,6 +530,20 @@ export function KioskApp() {
 
   const viewKey = `${mode}-${displayNode?.id ?? activeTheme ?? 'idle'}-${visualStyle}`;
 
+  // Cross-screen handoff: speel de rise-from-bottom planeet af wanneer een
+  // NIEUW detail-onderwerp binnenkomt (de planeet die van de tafel af vloog).
+  const [handoff, setHandoff] = useState<{ color: string; image: string | null } | null>(null);
+  const prevDetailIdRef = useRef<string | null>(null);
+  const isDetailEntry = mode === 'detail';
+
+  useEffect(() => {
+    const detailId = mode === 'detail' ? displayNode?.id ?? null : null;
+    if (detailId && detailId !== prevDetailIdRef.current) {
+      setHandoff({ color: accentColor, image: navigationState.planetImage ?? null });
+    }
+    prevDetailIdRef.current = detailId;
+  }, [mode, displayNode, accentColor, navigationState.planetImage]);
+
   return (
     <div
       className="kiosk-detail-shell relative isolate size-full min-h-screen overflow-hidden bg-[#071016] text-white"
@@ -470,18 +556,35 @@ export function KioskApp() {
       <KioskBrand />
       <StatusIndicator connected={connected} health={health} />
 
+      {/* Cross-screen handoff — dezelfde planeet rijst van onder op tot het midden. */}
+      <AnimatePresence>
+        {handoff && (
+          <KioskHandoffEntry
+            key="handoff"
+            color={handoff.color}
+            image={handoff.image}
+            onComplete={() => setHandoff(null)}
+          />
+        )}
+      </AnimatePresence>
+
       <main className="kiosk-detail-main relative z-10 flex min-h-screen items-center px-[4.8vw] pb-12 pt-32">
         <AnimatePresence mode="wait">
           <motion.section
             key={viewKey}
             className="kiosk-detail-layout"
-            // Alleen opacity animeren — y + scale dwingen elk frame een
-            // re-composit van de hele layout-section met z'n zware kinderen.
-            // Crossfade is visueel even soepel en aanzienlijk goedkoper.
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease: 'easeOut' }}
+            // Bestaande UI vliegt OMHOOG het scherm uit om ruimte te maken
+            // (op het moment dat de planeet de tafel verlaat). Daarna komt de
+            // handoff-bol van onder op en klapt de nieuwe detail-UI uit het
+            // midden uit.
+            initial={isDetailEntry ? { opacity: 0, scale: 0.62 } : { opacity: 0 }}
+            animate={isDetailEntry ? { opacity: 1, scale: 1 } : { opacity: 1 }}
+            exit={{ y: '-115vh', opacity: 0.85, transition: { duration: 0.5, ease: [0.5, 0, 0.75, 0] } }}
+            transition={
+              isDetailEntry
+                ? { duration: 0.55, ease: [0.34, 1.56, 0.64, 1], delay: 0.6 }
+                : { duration: 0.4, ease: 'easeOut' }
+            }
           >
             <div className="kiosk-detail-planet-zone">
               <KioskDetailPlanet node={displayNode} mode={mode} accentColor={accentColor} />

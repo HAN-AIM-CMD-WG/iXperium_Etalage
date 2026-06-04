@@ -30,10 +30,28 @@ const CENTRAL_LABEL_FILL = '#FFFFFF';
 const CENTRAL_LABEL_SHADOW = 'rgba(2, 6, 20, 0.94)';
 const VECTOR_ORBIT_STROKE_WIDTH = 8;
 const VECTOR_ORBIT_STROKE = 'rgba(91, 224, 255, 0.96)';
+const PLANET_SNAPSHOT_MAX_PX = 420;
+const PLANET_SNAPSHOT_WEBP_QUALITY = 0.76;
+
+/**
+ * Schermpositie (viewport/client-coords) van de getapte planeet, plus radius.
+ * Wordt meegegeven aan onSelectNode zodat een fly-to-center animatie precies
+ * vanaf de getapte planeet kan starten.
+ */
+export interface PlanetSelectOrigin {
+  clientX: number;
+  clientY: number;
+  clientRadius: number;
+  /** Snapshot (dataURL) van de exacte getapte planeet uit het canvas, zodat de
+   *  fly-animatie letterlijk díe planeet toont i.p.v. een generieke bol. */
+  image?: string;
+  /** CSS-grootte (px) van de vierkante snapshot-afbeelding. */
+  imageCssSize?: number;
+}
 
 interface OrbitRingProps {
   nodes: ContentNode[];
-  onSelectNode: (node: ContentNode) => void;
+  onSelectNode: (node: ContentNode, origin?: PlanetSelectOrigin) => void;
   onFocusChange?: (node: ContentNode) => void;
   radiusX?: number;
   radiusY?: number;
@@ -41,6 +59,9 @@ interface OrbitRingProps {
   centerOffsetY?: number;
   centerMaskRadius?: number;
   visualStyle?: AppVisualStyle;
+  /** Node-id dat NIET in de orbit getekend wordt (bijv. terwijl hij naar het
+   *  centrum vliegt). Zo lijkt het of de planeet zelf de orbit verlaat. */
+  hiddenNodeId?: string | null;
 }
 
 interface RenderedPlanet {
@@ -1035,6 +1056,7 @@ export const OrbitRing = memo(function OrbitRing({
   centerOffsetY = 0,
   centerMaskRadius = 0,
   visualStyle = DEFAULT_VISUAL_STYLE,
+  hiddenNodeId = null,
 }: OrbitRingProps) {
   const backCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const frontCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1065,6 +1087,9 @@ export const OrbitRing = memo(function OrbitRing({
   // stringHash en getBandLabel zijn pure functies van node.id / node.title;
   // we cachen ze zodat ze niet elke frame opnieuw uitgerekend worden.
   const nodeMetaRef = useRef(new Map<string, { hash: number; bandLabel: string }>());
+  // Node-id dat tijdelijk niet getekend wordt (vliegt naar centrum / weg).
+  const hiddenNodeIdRef = useRef<string | null>(hiddenNodeId);
+  hiddenNodeIdRef.current = hiddenNodeId;
   // Gecachete layout-metrics. Voorkomt synchronous forced layout per frame:
   // getBoundingClientRect + window.innerWidth/innerHeight zijn read-from-DOM
   // operaties die alle pending style/transform writes (Framer Motion!) eerst
@@ -1385,7 +1410,10 @@ export const OrbitRing = memo(function OrbitRing({
     const shouldCheckFocus = Boolean(onFocusChangeRef.current) && performance.now() - focusChangeThrottleRef.current >= FOCUS_THROTTLE_MS;
 
     const animTime = animTimeRef.current;
+    const hiddenId = hiddenNodeIdRef.current;
     for (const planet of planets) {
+      // Sla de vliegende planeet over zodat hij echt uit de orbit "vertrekt".
+      if (hiddenId && planet.node.id === hiddenId) continue;
       drawPlanet(backContext, planet, 'back', planet.backVisibility, animTime);
       drawPlanet(frontContext, planet, 'front', planet.frontVisibility, animTime);
 
@@ -1405,6 +1433,7 @@ export const OrbitRing = memo(function OrbitRing({
       // Daardoor kunnen planeet-depth, centrale planeet en latere canvas-passes
       // de tekst niet optisch dimmen. Alleen tekst wordt op deze laag getekend.
       for (const planet of planets) {
+        if (hiddenId && planet.node.id === hiddenId) continue;
         drawVectorPlanetLabelOverlay(labelContext, planet);
       }
     }
@@ -1552,12 +1581,66 @@ export const OrbitRing = memo(function OrbitRing({
     };
   }, [drawOrbit]);
 
-  const findHitPlanet = (clientX: number, clientY: number) => {
+  /**
+   * Maak een snapshot van de exacte planeet uit de canvaslagen (front + label)
+   * rond de gegeven stage-positie. Geeft een dataURL + CSS-grootte terug zodat
+   * de fly-overlay letterlijk díe planeet toont.
+   */
+  const capturePlanetSnapshot = (
+    planetStageX: number,
+    planetStageY: number,
+    planetStageRadius: number,
+    scaleToClient: number,
+  ): { image: string; imageCssSize: number } | null => {
+    const frontCanvas = frontCanvasRef.current;
+    if (!frontCanvas) return null;
+    const { width } = stageSizeRef.current;
+    if (width <= 0) return null;
+
+    // Device-pixel ratio waarmee het canvas is opgezet.
+    const pr = frontCanvas.width / width;
+    // Box rond de planeet — ruim genoeg voor halo + label binnen de bol.
+    const boxStage = planetStageRadius * 3;
+    const srcX = (planetStageX - boxStage / 2) * pr;
+    const srcY = (planetStageY - boxStage / 2) * pr;
+    const srcSize = boxStage * pr;
+
+    try {
+      const off = document.createElement('canvas');
+      const outputSize = Math.max(1, Math.min(PLANET_SNAPSHOT_MAX_PX, Math.round(srcSize)));
+      off.width = outputSize;
+      off.height = outputSize;
+      const offCtx = off.getContext('2d');
+      if (!offCtx) return null;
+
+      // Compositeer de planeetlagen: front (body + halo) en label-overlay.
+      offCtx.drawImage(frontCanvas, srcX, srcY, srcSize, srcSize, 0, 0, outputSize, outputSize);
+      const labelCanvas = labelCanvasRef.current;
+      if (labelCanvas) {
+        offCtx.drawImage(labelCanvas, srcX, srcY, srcSize, srcSize, 0, 0, outputSize, outputSize);
+      }
+
+      const webpImage = off.toDataURL('image/webp', PLANET_SNAPSHOT_WEBP_QUALITY);
+      const image = webpImage.startsWith('data:image/webp')
+        ? webpImage
+        : off.toDataURL('image/png');
+
+      return {
+        image,
+        imageCssSize: boxStage * scaleToClient,
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const findHitPlanet = (clientX: number, clientY: number): { node: ContentNode; origin: PlanetSelectOrigin } | null => {
     const canvas = frontCanvasRef.current;
     if (!canvas) return null;
 
     const rect = canvas.getBoundingClientRect();
     const { width, height } = stageSizeRef.current;
+    const scaleToClient = rect.width > 0 ? rect.width / width : 1;
     const x = rect.width > 0 ? (clientX - rect.left) * (width / rect.width) : clientX - rect.left;
     const y = rect.height > 0 ? (clientY - rect.top) * (height / rect.height) : clientY - rect.top;
 
@@ -1567,7 +1650,17 @@ export const OrbitRing = memo(function OrbitRing({
       const distance = Math.hypot(x - planet.x, y - planet.y);
 
       if (distance <= hitRadius) {
-        return planet.node;
+        // Converteer de stage-coords van de planeet terug naar viewport-coords
+        // zodat de fly-animatie exact vanaf de getapte planeet kan starten.
+        const snapshot = capturePlanetSnapshot(planet.x, planet.y, planet.radius, scaleToClient);
+        const origin: PlanetSelectOrigin = {
+          clientX: rect.left + planet.x * scaleToClient,
+          clientY: rect.top + planet.y * scaleToClient,
+          clientRadius: planet.radius * scaleToClient,
+          image: snapshot?.image,
+          imageCssSize: snapshot?.imageCssSize,
+        };
+        return { node: planet.node, origin };
       }
     }
 
@@ -1616,8 +1709,8 @@ export const OrbitRing = memo(function OrbitRing({
 
     if (totalDragRef.current <= DRAG_CLICK_THRESHOLD) {
       momentumActiveRef.current = false;
-      const hitNode = findHitPlanet(event.clientX, event.clientY);
-      if (hitNode) onSelectNodeRef.current(hitNode);
+      const hit = findHitPlanet(event.clientX, event.clientY);
+      if (hit) onSelectNodeRef.current(hit.node, hit.origin);
     }
   };
 
