@@ -14,6 +14,10 @@ const VELOCITY_THRESHOLD = 0.0008;
 const AUTO_ROTATE_SPEED = 0.0032;
 const AUTO_ROTATE_LERP = 0.08;
 const MAX_FRAME_SCALE = 2.5;
+const MAX_CANVAS_PIXEL_RATIO = 1.5;
+const MAX_RENDER_FPS = 60;
+const RENDER_FRAME_INTERVAL_MS = 1000 / MAX_RENDER_FPS;
+const FRAME_INTERVAL_EPSILON_MS = 1;
 const DRAG_CLICK_THRESHOLD = 12;
 const FOCUS_THROTTLE_MS = 70;
 const LAYER_FADE_START = -0.22;
@@ -1507,7 +1511,7 @@ export const OrbitRing = memo(function OrbitRing({
       const rect = wrapper.getBoundingClientRect();
       const nextWidth = Math.max(1, Math.floor(rect.width));
       const nextHeight = Math.max(1, Math.floor(rect.height));
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_CANVAS_PIXEL_RATIO);
 
       const sizeChanged = width !== nextWidth || height !== nextHeight;
       if (sizeChanged) {
@@ -1540,6 +1544,14 @@ export const OrbitRing = memo(function OrbitRing({
 
     const tick = () => {
       const now = performance.now();
+      if (
+        lastFrameTimeRef.current > 0 &&
+        now - lastFrameTimeRef.current < RENDER_FRAME_INTERVAL_MS - FRAME_INTERVAL_EPSILON_MS
+      ) {
+        animationFrameRef.current = requestAnimationFrame(tick);
+        return;
+      }
+
       const previousFrameTime = lastFrameTimeRef.current || now;
       const frameScale = Math.min((now - previousFrameTime) / (1000 / 60), MAX_FRAME_SCALE);
       const deltaSec = Math.min((now - previousFrameTime) / 1000, 0.1);

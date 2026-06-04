@@ -26,6 +26,7 @@ const TABLE_SUBMENU_ORBIT = {
 // Diameter (px) waar een fly-to-center planeet naartoe schaalt — ongeveer de
 // grootte van de centrum-planeet.
 const CENTER_FLY_DIAMETER = 300;
+const FOCUS_SYNC_THROTTLE_MS = 220;
 
 function hexToRgb(hex: string) {
   const normalized = hex.replace('#', '');
@@ -446,6 +447,8 @@ export function TableApp() {
     origin: PlanetSelectOrigin;
     mode: FlyMode;
   } | null>(null);
+  const focusThrottleRef = useRef(0);
+  const lastSyncedFocusNodeIdRef = useRef<string | null>(null);
   const visualStyle = DEFAULT_VISUAL_STYLE;
 
   const handleSelectMain = useCallback((node: ContentNode, origin?: PlanetSelectOrigin) => {
@@ -460,6 +463,9 @@ export function TableApp() {
       selectedSub: null,
     });
     setCurrentTheme(node.theme);
+    setNearestPlanet(node);
+    lastSyncedFocusNodeIdRef.current = node.id;
+    focusThrottleRef.current = performance.now();
     publishNavigation({
       level: 'submenu',
       mainId: node.id,
@@ -494,13 +500,15 @@ export function TableApp() {
     setFlyState(null);
   }, []);
 
-  const focusThrottleRef = useRef(0);
-
   const handleFocusChange = useCallback((node: ContentNode) => {
+    if (lastSyncedFocusNodeIdRef.current === node.id) return;
+
     const now = performance.now();
-    // Throttle theme changes to avoid excessive re-renders during fast spinning
-    if (now - focusThrottleRef.current < 50) return;
+    const isInitialFocus = lastSyncedFocusNodeIdRef.current === null;
+    // Theme/socket updates are visible only when the focused route changes.
+    if (!isInitialFocus && now - focusThrottleRef.current < FOCUS_SYNC_THROTTLE_MS) return;
     focusThrottleRef.current = now;
+    lastSyncedFocusNodeIdRef.current = node.id;
 
     startTransition(() => {
       setCurrentTheme(node.theme);
@@ -521,6 +529,8 @@ export function TableApp() {
     });
     setCurrentTheme('main');
     setNearestPlanet(null);
+    focusThrottleRef.current = 0;
+    lastSyncedFocusNodeIdRef.current = null;
     resetNavigation();
   }, [resetNavigation]);
 
