@@ -49,7 +49,8 @@ export const Planet = memo(function Planet({
   if (isCenter) {
     const compact = compactTitleForCenter(node.title);
     const hasLongForm = compact !== node.title;
-    const themeCode = (node.theme || node.id).toUpperCase();
+    const rawCode = node.theme || node.id;
+    const themeCode = rawCode.charAt(0).toUpperCase() + rawCode.slice(1);
     const labelStyle = {
       '--central-accent': node.color,
       '--central-text': '#ffffff',
@@ -82,7 +83,7 @@ export const Planet = memo(function Planet({
               <motion.button
                 type="button"
                 onClick={onBack}
-                className="pointer-events-auto mx-auto mb-4 flex items-center gap-2 rounded-full border border-white/25 bg-white/[0.12] px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                className="pointer-events-auto mx-auto mb-4 flex items-center gap-2 rounded-full border border-white/25 bg-white/[0.12] px-4 py-2 text-xs font-bold tracking-[0.18em] text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.4 }}
@@ -108,7 +109,7 @@ export const Planet = memo(function Planet({
 
             {/* Eyebrow — tracking-widest small caps, subtiel theme-getint */}
             <motion.p
-              className="central-planet-label__kicker mt-5 text-[10px] font-bold uppercase text-white/58"
+              className="central-planet-label__kicker mt-5 text-[10px] font-bold text-white/58"
               style={{ letterSpacing: '0.42em' }}
               initial={{ opacity: 0, y: -3 }}
               animate={{ opacity: 1, y: 0 }}
@@ -172,7 +173,7 @@ export const Planet = memo(function Planet({
               </motion.p>
             ) : (
               <motion.p
-                className="central-planet-label__footer mt-4 text-[10.5px] font-bold uppercase text-white/45"
+                className="central-planet-label__footer mt-4 text-[10.5px] font-bold text-white/45"
                 style={{ letterSpacing: '0.4em' }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

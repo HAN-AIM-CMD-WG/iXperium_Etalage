@@ -332,6 +332,14 @@
   transition: fill 1.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Statische disk-dot: geen pulse-animatie (perf), vaste mid-opacity ≈ het
+   gemiddelde van de pulse-keyframe zodat het sterrenveld even dicht oogt.
+   Kleur crossfade't nog mee met het thema. */
+.kurzgesagt-disk-dot--static {
+  opacity: 0.62;
+  transition: fill 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .kurzgesagt-twinkle-star {
   animation-name: kurzgesagt-twinkle-pulse;
   animation-timing-function: linear;
@@ -659,7 +667,7 @@
   --ixp-light-blue: #9ebce6;
   --ixp-dark: #19353c;
   --ixp-font-heading: 'Overpass', 'Source Sans Pro', 'Avenir Next', system-ui, sans-serif;
-  --ixp-font-body: 'Source Sans Pro', 'Avenir Next', Inter, system-ui, sans-serif;
+  --ixp-font-body: 'Overpass', 'Source Sans Pro', 'Avenir Next', Inter, system-ui, sans-serif;
   background: #1736d1;
   font-family: var(--ixp-font-body);
 }
@@ -1593,7 +1601,7 @@
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0.28em;
-  text-transform: uppercase;
+  text-transform: none;
   opacity: 0.9;
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.42);
 }
@@ -1645,8 +1653,8 @@
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 2rem;
   background:
-    radial-gradient(circle at 0% 0%, var(--panel-glow, rgba(70, 180, 105, 0.2)), transparent 36%),
-    rgba(7, 16, 22, 0.64);
+    radial-gradient(circle at 0% 0%, var(--panel-glow, rgba(102, 42, 136, 0.28)), transparent 36%),
+    rgba(102, 42, 136, 0.5);
   padding: clamp(1.45rem, 2.1vw, 2.35rem);
   color: #ffffff;
   box-shadow: 0 28px 92px rgba(0, 0, 0, 0.32);
@@ -1678,7 +1686,7 @@
   font-size: 0.78rem;
   font-weight: 950;
   line-height: 1;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .kiosk-detail-panel__header h1 {
@@ -1735,7 +1743,7 @@
   font-size: 0.8rem;
   font-weight: 950;
   letter-spacing: 0;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .kiosk-detail-panel__columns ul {
@@ -1796,7 +1804,7 @@
   font-size: 0.73rem;
   font-weight: 850;
   line-height: 1;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 [data-visual-style='kurzgesagt'] .kiosk-brand-mark {

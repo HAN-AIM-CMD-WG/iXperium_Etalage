@@ -27,6 +27,7 @@ const TABLE_SUBMENU_ORBIT = {
 // grootte van de centrum-planeet.
 const CENTER_FLY_DIAMETER = 300;
 const FOCUS_SYNC_THROTTLE_MS = 220;
+const PANEL_BACKGROUND = 'rgba(30, 8, 58, 0.44)';
 
 function hexToRgb(hex: string) {
   const normalized = hex.replace('#', '');
@@ -66,6 +67,15 @@ function mixHexRgba(hex: string, target: string, amount: number, alpha: number) 
 function rgbaHex(hex: string, alpha: number) {
   const { r, g, b } = hexToRgb(hex);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/**
+ * Flat/pastel variant van een routekleur — mengt fors richting wit zodat de
+ * swatch zachter en minder verzadigd oogt en beter aansluit op de pastel-
+ * kleuren die de thema-paletten zelf gebruiken.
+ */
+function pastel(hex: string) {
+  return mixHex(hex, '#FFFFFF', 0.5);
 }
 
 /**
@@ -160,9 +170,12 @@ const RouteCommandPanel = memo(function RouteCommandPanel({
   onSelectNode: (node: ContentNode) => void;
 }) {
   return (
-    <aside className="pointer-events-auto fixed left-8 top-[18vh] z-[90] flex w-[min(24vw,21rem)] max-w-[21rem] flex-col gap-4 rounded-[1.875rem] border border-white/15 bg-[#0a121a]/85 p-5 text-white shadow-[0_24px_90px_rgba(0,0,0,0.30)] max-[1120px]:hidden">
+    <aside
+      className="pointer-events-auto fixed left-8 top-[18vh] z-[90] flex w-[min(24vw,21rem)] max-w-[21rem] flex-col gap-4 rounded-[1.875rem] border border-white/15 p-5 text-white shadow-[0_24px_90px_rgba(0,0,0,0.30)] backdrop-blur-xl max-[1120px]:hidden"
+      style={{ backgroundColor: PANEL_BACKGROUND }}
+    >
       <div className="flex flex-col gap-3">
-        <p className="text-xs font-bold uppercase tracking-[0.24em] text-white/45">Routebord</p>
+        <p className="text-xs font-bold tracking-[0.24em] text-white/55">Routebord</p>
         <h2 className="text-[2.35rem] font-black leading-[0.98] tracking-normal text-white">
           Kies een kennisroute.
         </h2>
@@ -186,8 +199,8 @@ const RouteCommandPanel = memo(function RouteCommandPanel({
               }}
             >
               <span
-                className="h-11 w-11 flex-shrink-0 rounded-[0.875rem] shadow-[0_12px_28px_rgba(0,0,0,0.22)]"
-                style={{ backgroundColor: node.color }}
+                className="h-11 w-11 flex-shrink-0 rounded-[0.875rem]"
+                style={{ backgroundColor: pastel(node.color) }}
               />
               <span className="min-w-0">
                 <span className="block text-[0.98rem] font-extrabold leading-5 text-white">
@@ -206,226 +219,89 @@ const RouteCommandPanel = memo(function RouteCommandPanel({
 });
 
 const FocusPreviewPanel = memo(function FocusPreviewPanel({
+  routeNode,
   focusNode,
-  level,
+  progress,
 }: {
+  routeNode: ContentNode;
   focusNode: ContentNode;
-  level: NavigationLevel;
+  progress: number;
 }) {
-  const children = focusNode.children ?? [];
-  const related = focusNode.content?.relatedItems ?? children.map((node) => node.title);
-  const metricLabel = level === 'detail' ? 'Gerelateerd' : 'Onderwerpen';
-  const metricValue = related.length || children.length || 1;
-
-  // Theme-aware kleurenpalet voor de planet-preview. Alles afgeleid van
-  // focusNode.color zodat de planeet meekleurt met de actieve route.
-  const planet = useMemo(() => ({
-    bodyLight: mixHex(focusNode.color, '#FFFFFF', 0.5),
-    bodyMid: focusNode.color,
-    bodyDeep: mixHex(focusNode.color, '#040818', 0.62),
-    bodyShadow: mixHex(focusNode.color, '#02030A', 0.78),
-    cloudLight: mixHex(focusNode.color, '#FFFFFF', 0.32),
-    cloudDeep: mixHex(focusNode.color, '#060914', 0.54),
-    halo: rgbaHex(focusNode.color, 0.55),
-    haloSoft: rgbaHex(focusNode.color, 0.22),
-    ringStroke: rgbaHex(focusNode.color, 0.42),
-    spaceDeep: mixHex(focusNode.color, '#03050E', 0.86),
-    spaceMid: mixHex(focusNode.color, '#070A1A', 0.7),
-  }), [focusNode.color]);
+  // Alle onderwerpen binnen de gekozen kennisroute.
+  const topics = [...(routeNode.children ?? [])].reverse();
+  // Foto die bij het thema/onderwerp past — afkomstig uit dit project
+  // (src/assets/topics) of de iXperium-bronafbeeldingen in content.ts.
+  const image = focusNode.content?.image ?? routeNode.content?.image;
+  const clampedProgress = Math.min(1, Math.max(0, progress));
+  const barColor = mixHex(routeNode.color, '#FFFFFF', 0.32);
 
   return (
-    <aside className="pointer-events-none fixed right-8 top-[18vh] z-[90] flex h-[40.25rem] w-[min(24vw,21rem)] max-w-[21rem] flex-col justify-between gap-4 rounded-[1.875rem] border border-white/15 bg-[#0a121a]/85 p-5 text-white shadow-[0_24px_90px_rgba(0,0,0,0.30)] max-[1120px]:hidden">
+    <aside
+      className="pointer-events-none fixed right-8 top-[16vh] z-[90] flex max-h-[74vh] w-[min(24vw,21rem)] max-w-[21rem] flex-col gap-4 rounded-[1.875rem] border border-white/15 p-5 text-white shadow-[0_24px_90px_rgba(0,0,0,0.30)] backdrop-blur-xl max-[1120px]:hidden"
+      style={{ backgroundColor: PANEL_BACKGROUND }}
+    >
       <div className="flex flex-col gap-2.5">
-        <p className="text-xs font-bold uppercase tracking-[0.24em] text-white/45">Focus</p>
-        <h2 className="text-[1.85rem] font-black leading-[1.02] tracking-normal text-white">
-          {focusNode.title}
+        <p className="text-xs font-bold tracking-[0.24em] text-white/55">Kennisroute</p>
+        <h2 className="text-[1.7rem] font-black leading-[1.02] tracking-normal text-white">
+          {routeNode.title}
         </h2>
       </div>
 
-      {/* Theme-aware planet visualization — vervangt de oude flat circle.
-          Gelaagd: deep space backdrop → starfield → orbit ring → atmospheric
-          halo → planet body met surface clouds + specular highlight → kleine
-          maan rechtsboven. Alle kleuren leiden af van focusNode.color. */}
-      <div
-        className="relative h-44 overflow-hidden rounded-[1.5rem]"
-        style={{
-          background: `
-            radial-gradient(ellipse at 78% 22%, ${planet.haloSoft}, transparent 55%),
-            radial-gradient(ellipse at 22% 80%, ${rgbaHex(focusNode.color, 0.15)}, transparent 60%),
-            linear-gradient(135deg, ${planet.spaceMid} 0%, ${planet.spaceDeep} 78%)
-          `,
-        }}
-      >
-        {/* Star scatter — vaste posities zodat het stabiel oogt */}
-        <div
-          className="absolute inset-0 opacity-65"
-          style={{
-            backgroundImage: `
-              radial-gradient(1px 1px at 14% 22%, rgba(255,255,255,0.9), transparent 60%),
-              radial-gradient(1px 1px at 68% 14%, rgba(255,255,255,0.7), transparent 60%),
-              radial-gradient(1.5px 1.5px at 88% 38%, rgba(255,255,255,0.85), transparent 60%),
-              radial-gradient(1px 1px at 34% 86%, rgba(255,255,255,0.6), transparent 60%),
-              radial-gradient(1px 1px at 92% 72%, rgba(255,255,255,0.7), transparent 60%),
-              radial-gradient(1px 1px at 6% 60%, rgba(255,255,255,0.55), transparent 60%),
-              radial-gradient(1px 1px at 48% 8%, rgba(255,255,255,0.65), transparent 60%)
-            `,
-          }}
-        />
-
-        {/* Orbit ring achter de planeet, schuin gekanteld */}
-        <div
-          className="absolute left-1/2 top-[58%] h-[150px] w-[170px] -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{
-            border: `1px solid ${planet.ringStroke}`,
-            transform: 'translate(-50%, -50%) rotate(-22deg)',
-            boxShadow: `inset 0 0 18px ${rgbaHex(focusNode.color, 0.18)}`,
-          }}
-        />
-        <div
-          className="absolute left-1/2 top-[58%] h-[168px] w-[188px] -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{
-            border: `1px dashed ${rgbaHex(focusNode.color, 0.18)}`,
-            transform: 'translate(-50%, -50%) rotate(-22deg)',
-          }}
-        />
-
-        {/* Atmospheric halo — wijde zachte gloed rond de planet */}
-        <div
-          className="absolute left-1/2 top-1/2 h-[150px] w-[150px] -translate-x-1/2 -translate-y-1/2 rounded-full"
-          style={{
-            background: `radial-gradient(circle, ${planet.halo} 28%, transparent 70%)`,
-            filter: 'blur(16px)',
-          }}
-        />
-
-        {/* Planet body */}
-        <motion.div
-          className="absolute left-1/2 top-1/2 h-[108px] w-[108px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full"
-          style={{
-            background: `
-              radial-gradient(circle at 32% 26%, ${planet.bodyLight} 0%, transparent 48%),
-              radial-gradient(circle at 78% 82%, ${planet.bodyShadow} 0%, transparent 58%),
-              linear-gradient(140deg, ${planet.bodyMid} 0%, ${planet.bodyDeep} 100%)
-            `,
-            boxShadow: `
-              inset -10px -12px 22px ${planet.bodyShadow}cc,
-              inset 5px 5px 14px ${rgbaHex(focusNode.color, 0.4)},
-              0 0 28px ${planet.halo},
-              0 8px 22px rgba(0,0,0,0.45)
-            `,
-          }}
-          animate={{ scale: [1, 1.025, 1] }}
-          transition={{ duration: 9, repeat: Infinity, ease: 'linear' }}
-        >
-          {/* Surface "continenten" — zachte organische vlekken */}
+      {/* Thema-foto in plaats van de oude vector-planeet. Volgt de route of het
+          onderwerp dat in focus staat. */}
+      <div className="relative h-40 flex-shrink-0 overflow-hidden rounded-[1.5rem] bg-black/30">
+        {image ? (
+          <img
+            src={image}
+            alt={focusNode.title}
+            className="h-full w-full object-cover"
+            draggable={false}
+          />
+        ) : (
           <div
-            className="absolute"
-            style={{
-              left: '14%',
-              top: '28%',
-              width: '44%',
-              height: '24%',
-              background: planet.cloudDeep,
-              opacity: 0.42,
-              borderRadius: '52% 60% 38% 70% / 60% 42% 60% 40%',
-              filter: 'blur(2.5px)',
-            }}
+            className="h-full w-full"
+            style={{ background: `linear-gradient(135deg, ${routeNode.color}, ${mixHex(routeNode.color, '#040818', 0.6)})` }}
           />
-          <div
-            className="absolute"
-            style={{
-              right: '10%',
-              top: '50%',
-              width: '38%',
-              height: '20%',
-              background: planet.cloudDeep,
-              opacity: 0.34,
-              borderRadius: '70% 30% 60% 40% / 50% 70% 30% 50%',
-              filter: 'blur(2.5px)',
-            }}
-          />
-          <div
-            className="absolute"
-            style={{
-              left: '32%',
-              bottom: '12%',
-              width: '28%',
-              height: '14%',
-              background: planet.cloudLight,
-              opacity: 0.38,
-              borderRadius: '60% 40% 70% 30% / 40% 60% 40% 60%',
-              filter: 'blur(2px)',
-            }}
-          />
-
-          {/* Specular highlight linksboven — geeft glossy bol-feel */}
-          <div
-            className="absolute"
-            style={{
-              left: '18%',
-              top: '14%',
-              width: '28%',
-              height: '14%',
-              background: 'rgba(255,255,255,0.55)',
-              borderRadius: '50%',
-              filter: 'blur(5px)',
-            }}
-          />
-
-          {/* Terminator — donkere rand rechts/onder voor 3D-depth */}
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{
-              background: `radial-gradient(circle at 30% 30%, transparent 38%, ${planet.bodyShadow}40 80%)`,
-              mixBlendMode: 'multiply',
-            }}
-          />
-        </motion.div>
-
-        {/* Kleine maan rechtsboven */}
-        <div
-          className="absolute right-5 top-5 h-3.5 w-3.5 rounded-full"
-          style={{
-            background: `radial-gradient(circle at 32% 28%, ${planet.bodyLight}, ${planet.bodyDeep} 90%)`,
-            boxShadow: `0 0 8px ${planet.haloSoft}, inset -1px -1px 2px ${planet.bodyShadow}`,
-          }}
-        />
-
-        {/* Tweede verder verwijderde "ster-cluster" — accent voor diepte */}
-        <div
-          className="absolute bottom-4 left-5 flex gap-1.5"
-          style={{ opacity: 0.7 }}
-        >
-          <span
-            className="block h-1 w-1 rounded-full"
-            style={{ background: rgbaHex(focusNode.color, 0.9), boxShadow: `0 0 4px ${planet.halo}` }}
-          />
-          <span className="block h-[3px] w-[3px] rounded-full bg-white/70" />
-        </div>
+        )}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(18,6,30,0.6)] to-transparent" />
       </div>
 
-      <div className="flex flex-col gap-2.5">
-        <div className="flex justify-between text-sm font-semibold text-white/60">
-          <span>{metricLabel}</span>
-          <span>{metricValue}</span>
-        </div>
-        <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
+      <div className="flex flex-shrink-0 flex-col">
+        <div className="h-2.5 overflow-hidden rounded-full bg-white/15">
           <div
-            className="h-full rounded-full"
-            style={{
-              width: `${Math.min(92, Math.max(34, metricValue * 16))}%`,
-              backgroundColor: focusNode.color,
-            }}
+            className="h-full rounded-full transition-[width] duration-300 ease-out"
+            style={{ width: `${clampedProgress * 100}%`, backgroundColor: barColor }}
           />
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        {related.slice(0, 3).map((item) => (
-          <div key={item} className="rounded-2xl bg-white/[0.08] px-3.5 py-3 text-sm font-semibold leading-4 text-white/75">
-            {item}
+      {/* Volledige lijst met onderwerpen; het onderwerp in focus is gemarkeerd. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-0.5">
+        {topics.length > 0 ? (
+          topics.map((topic) => {
+            const active = topic.id === focusNode.id;
+            return (
+              <div
+                key={topic.id}
+                className="flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold leading-4 transition-colors"
+                style={{
+                  backgroundColor: active ? rgbaHex(routeNode.color, 0.4) : 'rgba(255,255,255,0.08)',
+                  color: active ? '#FFFFFF' : 'rgba(255,255,255,0.78)',
+                }}
+              >
+                <span
+                  className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
+                  style={{ backgroundColor: pastel(topic.color) }}
+                />
+                <span className="min-w-0 truncate">{topic.title}</span>
+              </div>
+            );
+          })
+        ) : (
+          <div className="rounded-2xl bg-white/[0.08] px-3.5 py-3 text-sm font-semibold text-white/70">
+            Geen onderwerpen beschikbaar
           </div>
-        ))}
+        )}
       </div>
     </aside>
   );
@@ -441,6 +317,10 @@ export function TableApp() {
 
   const [currentTheme, setCurrentTheme] = useState('main');
   const [nearestPlanet, setNearestPlanet] = useState<ContentNode | null>(null);
+  // Onderwerp (kind) dat in de submenu-ring in focus staat — voedt de
+  // voortgangsbalk + markering in het rechter venster terwijl je door de
+  // onderwerp-planeten scrollt.
+  const [focusedSub, setFocusedSub] = useState<ContentNode | null>(null);
   // Transiente fly-animatie state. Wanneer gezet rendert de FlyingPlanet overlay.
   const [flyState, setFlyState] = useState<{
     node: ContentNode;
@@ -464,6 +344,7 @@ export function TableApp() {
     });
     setCurrentTheme(node.theme);
     setNearestPlanet(node);
+    setFocusedSub(null);
     lastSyncedFocusNodeIdRef.current = node.id;
     focusThrottleRef.current = performance.now();
     publishNavigation({
@@ -521,6 +402,13 @@ export function TableApp() {
     });
   }, [publishNavigation]);
 
+  // Lichtgewicht focus-handler voor de submenu-ring: alleen lokale state, geen
+  // socket-publicatie. Houdt bij welk onderwerp-planeet vooraan staat zodat de
+  // voortgangsbalk meeloopt terwijl je door de onderwerpen scrollt.
+  const handleSubFocusChange = useCallback((node: ContentNode) => {
+    startTransition(() => setFocusedSub(node));
+  }, []);
+
   const handleHome = useCallback(() => {
     setNavState({
       level: 'main',
@@ -529,6 +417,7 @@ export function TableApp() {
     });
     setCurrentTheme('main');
     setNearestPlanet(null);
+    setFocusedSub(null);
     focusThrottleRef.current = 0;
     lastSyncedFocusNodeIdRef.current = null;
     resetNavigation();
@@ -542,7 +431,27 @@ export function TableApp() {
   }, [navState]);
 
   const activeRouteNode = navState.selectedMain ?? nearestPlanet ?? contentData[1] ?? contentData[0];
-  const focusNode = navState.selectedSub ?? navState.selectedMain ?? nearestPlanet ?? contentData[1] ?? contentData[0];
+
+  // Het rechter venster toont de gekozen kennisroute + al haar onderwerpen.
+  // - In de hoofdring scroll je door de routes: voortgang = positie van de
+  //   route in de ring; de foto volgt de route in focus.
+  // - In een submenu scroll je door de onderwerpen: voortgang = positie van het
+  //   onderwerp in de lijst; de foto + markering volgen dat onderwerp.
+  const inSubmenu = navState.level === 'submenu' && Boolean(navState.selectedMain?.children?.length);
+  const panelFocusNode = inSubmenu
+    ? (focusedSub ?? navState.selectedMain ?? activeRouteNode)
+    : (nearestPlanet ?? activeRouteNode);
+
+  const progress = (() => {
+    if (inSubmenu) {
+      const kids = navState.selectedMain!.children!;
+      const idx = focusedSub ? kids.findIndex((k) => k.id === focusedSub.id) : -1;
+      return kids.length > 1 ? Math.max(0, idx) / (kids.length - 1) : 1;
+    }
+    const focusId = nearestPlanet?.id ?? activeRouteNode.id;
+    const idx = contentData.findIndex((n) => n.id === focusId);
+    return contentData.length > 1 ? Math.max(0, idx) / (contentData.length - 1) : 1;
+  })();
 
   return (
     <div
@@ -558,7 +467,7 @@ export function TableApp() {
           : nearestPlanet?.color}
         showCentralPlanet={navState.level !== 'detail'}
       />
-      <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_50%_43%,rgba(70,180,105,0.18),transparent_24%),radial-gradient(circle_at_18%_82%,rgba(255,51,68,0.18),transparent_28%),radial-gradient(circle_at_88%_18%,rgba(30,144,255,0.18),transparent_24%),linear-gradient(135deg,rgba(7,16,22,0.54),rgba(17,19,28,0.38))]" />
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_50%_43%,rgba(102,42,136,0.22),transparent_24%),radial-gradient(circle_at_18%_82%,rgba(255,51,68,0.18),transparent_28%),radial-gradient(circle_at_88%_18%,rgba(30,144,255,0.18),transparent_24%),linear-gradient(135deg,rgba(7,16,22,0.54),rgba(17,19,28,0.38))]" />
       <div className="pointer-events-none absolute inset-0 z-[1] opacity-[0.10] [background-image:linear-gradient(115deg,rgba(255,255,255,0.25)_1px,transparent_1px),linear-gradient(25deg,rgba(255,255,255,0.20)_1px,transparent_1px)] [background-size:88px_88px,144px_144px]" />
 
       {/* Dev FPS overlay — alleen in development build */}
@@ -566,7 +475,7 @@ export function TableApp() {
 
       <ConnectionPill connected={connected} health={health} />
       <RouteCommandPanel activeNode={activeRouteNode} onSelectNode={handleSelectMain} />
-      <FocusPreviewPanel focusNode={focusNode} level={navState.level} />
+      <FocusPreviewPanel routeNode={activeRouteNode} focusNode={panelFocusNode} progress={progress} />
 
       {/* iXperium branding */}
       <motion.div
@@ -677,6 +586,7 @@ export function TableApp() {
               <OrbitRing
                 nodes={navState.selectedMain.children}
                 onSelectNode={handleSelectSub}
+                onFocusChange={handleSubFocusChange}
                 radiusX={TABLE_SUBMENU_ORBIT.radiusX}
                 radiusY={TABLE_SUBMENU_ORBIT.radiusY}
                 centerOffsetX={20}

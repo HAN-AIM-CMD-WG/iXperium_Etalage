@@ -7,7 +7,11 @@ import {
 } from '../../shared/visualStyle';
 
 const PLANET_SIZE = 128;
-const VELOCITY_MULTIPLIER = 0.018;
+// Radialen orbit-rotatie per gesleepte pixel. Bewust laag gehouden zodat de
+// ring ~even snel meedraait als je vinger beweegt (bijna 1:1 op het front-punt)
+// i.p.v. ver vooruit te schieten. De vrijgekomen snelheid bij loslaten wordt
+// hier ook uit afgeleid, dus momentum blijft consistent met de sleepsnelheid.
+const VELOCITY_MULTIPLIER = 0.004;
 const VELOCITY_SCALE = 18;
 const FRICTION = 0.955;
 const VELOCITY_THRESHOLD = 0.0008;
@@ -213,25 +217,61 @@ const SPRITE_SIZE = Math.ceil(SPRITE_RENDER_RADIUS * SPRITE_PAD * 2 + 8); // 304
 const VECTOR_SPRITE_RENDER_RADIUS = 80;
 const VECTOR_SPRITE_PAD = 1.08;
 const VECTOR_SPRITE_SIZE = Math.ceil(VECTOR_SPRITE_RENDER_RADIUS * VECTOR_SPRITE_PAD * 2 + 8);
+// Halo reikt tot radius * 1.38 — eigen (grotere) sprite-grootte zodat de
+// volledige gloed past. Wordt per frame met drawImage geblit i.p.v. een
+// radial-gradient opnieuw te rasteren.
+const VECTOR_HALO_OUTER = 1.38;
+const VECTOR_HALO_SIZE = Math.ceil(VECTOR_SPRITE_RENDER_RADIUS * VECTOR_HALO_OUTER * 2 + 4);
+// Back-laag halo = front-alpha × deze factor (origineel: stops 0.16/0.08 t.o.v.
+// 0.34/0.16 ≈ 0.47–0.5). Zo bakken we één front-sprite en dimmen we de back-laag.
+const VECTOR_HALO_BACK_ALPHA = 0.48;
 
 type SpriteCanvas = HTMLCanvasElement | OffscreenCanvas;
 type PlanetSpriteSet = { halos: SpriteCanvas; body: SpriteCanvas };
 const PLANET_SPRITE_CACHE = new Map<string, PlanetSpriteSet>();
-type VectorPlanetSpriteSet = { body: SpriteCanvas; innerLight: SpriteCanvas };
+type VectorPlanetSpriteSet = { body: SpriteCanvas; innerLight: SpriteCanvas; halo: SpriteCanvas };
 const VECTOR_PLANET_SPRITE_CACHE = new Map<string, VectorPlanetSpriteSet>();
 
-function createSpriteCanvas(size: number): SpriteCanvas | null {
+// Vooraf berekende, frame-invariante oppervlakte-kleuren per node.color.
+// De atmosfeer-patches + craters in drawVectorPlanet hingen alleen van color af
+// maar werden elke frame opnieuw via mixRgba tot strings gebouwd (~100/frame GC).
+type VectorSurfaceColors = {
+  patchA: string;
+  patchB: string;
+  patchC: string;
+  craterBright: string;
+  craterDark: string;
+};
+const VECTOR_SURFACE_COLOR_CACHE = new Map<string, VectorSurfaceColors>();
+
+function getVectorSurfaceColors(color: string): VectorSurfaceColors {
+  const cached = VECTOR_SURFACE_COLOR_CACHE.get(color);
+  if (cached) return cached;
+
+  const colors: VectorSurfaceColors = {
+    patchA: mixRgba(color, { r: 38, g: 0, b: 92 }, 0.5, 0.34),
+    patchB: mixRgba(color, { r: 255, g: 255, b: 255 }, 0.32, 0.22),
+    patchC: mixRgba(color, { r: 255, g: 244, b: 90 }, 0.48, 0.25),
+    craterBright: mixRgba(color, { r: 255, g: 242, b: 160 }, 0.34, 0.26),
+    craterDark: mixRgba(color, { r: 34, g: 0, b: 88 }, 0.62, 0.36),
+  };
+
+  VECTOR_SURFACE_COLOR_CACHE.set(color, colors);
+  return colors;
+}
+
+function createSpriteCanvas(width: number, height: number = width): SpriteCanvas | null {
   if (typeof OffscreenCanvas !== 'undefined') {
     try {
-      return new OffscreenCanvas(size, size);
+      return new OffscreenCanvas(width, height);
     } catch {
       // fall through to HTMLCanvasElement
     }
   }
   if (typeof document !== 'undefined') {
     const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = width;
+    canvas.height = height;
     return canvas;
   }
   return null;
@@ -301,7 +341,8 @@ function getVectorPlanetSprites(color: string): VectorPlanetSpriteSet | null {
 
   const body = createSpriteCanvas(VECTOR_SPRITE_SIZE);
   const innerLightCanvas = createSpriteCanvas(VECTOR_SPRITE_SIZE);
-  if (!body || !innerLightCanvas) return null;
+  const haloCanvas = createSpriteCanvas(VECTOR_HALO_SIZE);
+  if (!body || !innerLightCanvas || !haloCanvas) return null;
 
   const bodyCtx = body.getContext('2d') as
     | CanvasRenderingContext2D
@@ -311,11 +352,31 @@ function getVectorPlanetSprites(color: string): VectorPlanetSpriteSet | null {
     | CanvasRenderingContext2D
     | OffscreenCanvasRenderingContext2D
     | null;
-  if (!bodyCtx || !lightCtx) return null;
+  const haloCtx = haloCanvas.getContext('2d') as
+    | CanvasRenderingContext2D
+    | OffscreenCanvasRenderingContext2D
+    | null;
+  if (!bodyCtx || !lightCtx || !haloCtx) return null;
 
   const cx = VECTOR_SPRITE_SIZE / 2;
   const cy = VECTOR_SPRITE_SIZE / 2;
   const radius = VECTOR_SPRITE_RENDER_RADIUS;
+
+  // --- Halo sprite (front-alpha) ---
+  // Identiek aan de oude per-frame gradient: inner 0.86r, outer 1.38r, fill 1.38r.
+  // De back-laag wordt bij het blitten via globalAlpha gedimd (VECTOR_HALO_BACK_ALPHA).
+  const haloCx = VECTOR_HALO_SIZE / 2;
+  const haloGrad = haloCtx.createRadialGradient(
+    haloCx, haloCx, radius * 0.86,
+    haloCx, haloCx, radius * VECTOR_HALO_OUTER,
+  );
+  haloGrad.addColorStop(0, rgba(color, 0.34));
+  haloGrad.addColorStop(0.44, rgba(color, 0.16));
+  haloGrad.addColorStop(1, rgba(color, 0));
+  haloCtx.beginPath();
+  haloCtx.arc(haloCx, haloCx, radius * VECTOR_HALO_OUTER, 0, TAU);
+  haloCtx.fillStyle = haloGrad;
+  haloCtx.fill();
 
   bodyCtx.save();
   bodyCtx.beginPath();
@@ -349,7 +410,7 @@ function getVectorPlanetSprites(color: string): VectorPlanetSpriteSet | null {
   lightCtx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
   lightCtx.restore();
 
-  const set: VectorPlanetSpriteSet = { body, innerLight: innerLightCanvas };
+  const set: VectorPlanetSpriteSet = { body, innerLight: innerLightCanvas, halo: haloCanvas };
   VECTOR_PLANET_SPRITE_CACHE.set(color, set);
   return set;
 }
@@ -612,25 +673,106 @@ function drawCentralStyleLabelLine(
   context.restore();
 }
 
-function drawVectorPlanetLabelOverlay(context: CanvasRenderingContext2D, planet: RenderedPlanet) {
+// ============================================================
+// LABEL SPRITE CACHE
+//
+// De labels (drawCentralStyleLabelLine: drop-shadow + 2× strokeText + 2×
+// fillText + shadowBlur per regel) werden ELKE frame opnieuw gerasterd voor
+// elke zichtbare planeet — shadowBlur-tekst is de duurste Canvas2D-operatie
+// hier. De tekst-inhoud/grootte is echter stabiel per (node, radius-bucket,
+// scale-bucket); alleen de positie beweegt. We rasteren daarom één keer naar
+// een offscreen canvas (op device-pixel-resolutie voor crispness) en blitten
+// daarna per frame alleen nog met drawImage op de bewegende positie.
+// ============================================================
+type LabelSprite = { canvas: SpriteCanvas; cssWidth: number; cssHeight: number };
+const LABEL_SPRITE_CACHE = new Map<string, LabelSprite>();
+
+function getPlanetLabelSprite(
+  layout: PlanetLabelLayout,
+  pixelRatio: number,
+  cacheKey: string,
+): LabelSprite | null {
+  const cached = LABEL_SPRITE_CACHE.get(cacheKey);
+  if (cached) return cached;
+  if (layout.lines.length === 0 || layout.maxLineWidth <= 0) return null;
+
+  // Ruime marge voor outline, drop-shadow én de witte glow (shadowBlur).
+  const pad = Math.ceil(layout.fontSize * 0.5 + 6);
+  const cssWidth = Math.ceil(layout.maxLineWidth + pad * 2);
+  const cssHeight = Math.ceil(layout.lines.length * layout.lineHeight + pad * 2);
+
+  const canvas = createSpriteCanvas(
+    Math.ceil(cssWidth * pixelRatio),
+    Math.ceil(cssHeight * pixelRatio),
+  );
+  if (!canvas) return null;
+  const rawCtx = canvas.getContext('2d') as
+    | CanvasRenderingContext2D
+    | OffscreenCanvasRenderingContext2D
+    | null;
+  if (!rawCtx) return null;
+  // De gebruikte API's (font/letterSpacing/stroke/fill/shadow*) bestaan op beide
+  // context-types; cast zodat drawCentralStyleLabelLine herbruikbaar blijft.
+  const spriteCtx = rawCtx as unknown as CanvasRenderingContext2D;
+  // Zelfde pr-schaal als de hoofd-labelcanvas → identieke shadow/stroke-raster.
+  spriteCtx.scale(pixelRatio, pixelRatio);
+  spriteCtx.textAlign = 'center';
+  spriteCtx.textBaseline = 'middle';
+
+  const firstLineY = cssHeight / 2 - ((layout.lines.length - 1) * layout.lineHeight) / 2;
+  layout.lines.forEach((line, index) => {
+    drawCentralStyleLabelLine(spriteCtx, line, cssWidth / 2, firstLineY + index * layout.lineHeight, layout.fontSize);
+  });
+
+  const sprite: LabelSprite = { canvas, cssWidth, cssHeight };
+  LABEL_SPRITE_CACHE.set(cacheKey, sprite);
+  if (LABEL_SPRITE_CACHE.size > LABEL_LAYOUT_CACHE_LIMIT) {
+    const oldestKey = LABEL_SPRITE_CACHE.keys().next().value;
+    if (oldestKey) LABEL_SPRITE_CACHE.delete(oldestKey);
+  }
+  return sprite;
+}
+
+function drawVectorPlanetLabelOverlay(
+  context: CanvasRenderingContext2D,
+  planet: RenderedPlanet,
+  pixelRatio: number,
+) {
   if (planet.frontVisibility <= 0.2 || planet.radius <= 28) return;
 
   const layout = getCachedPlanetLabelLayout(context, planet.node, planet.radius, planet.scale);
   const labelCenterY = planet.y + planet.radius * 0.23;
-  const firstLineY = labelCenterY - ((layout.lines.length - 1) * layout.lineHeight) / 2;
+
+  const { baseKey } = getLabelCacheParts(planet.node, planet.radius, planet.scale);
+  const sprite = getPlanetLabelSprite(layout, pixelRatio, `${baseKey}|${pixelRatio}`);
+
+  if (!sprite) {
+    // Fallback (zeldzaam, bv. lege layout): teken direct zoals voorheen.
+    const firstLineY = labelCenterY - ((layout.lines.length - 1) * layout.lineHeight) / 2;
+    context.save();
+    context.globalAlpha = 1;
+    context.globalCompositeOperation = 'source-over';
+    context.shadowBlur = 0;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    layout.lines.forEach((line, index) => {
+      drawCentralStyleLabelLine(context, line, planet.x, firstLineY + index * layout.lineHeight, layout.fontSize);
+    });
+    context.restore();
+    return;
+  }
 
   context.save();
   context.globalAlpha = 1;
   context.globalCompositeOperation = 'source-over';
   context.shadowBlur = 0;
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-
-  layout.lines.forEach((line, index) => {
-    const y = firstLineY + index * layout.lineHeight;
-    drawCentralStyleLabelLine(context, line, planet.x, y, layout.fontSize);
-  });
-
+  context.drawImage(
+    sprite.canvas,
+    planet.x - sprite.cssWidth / 2,
+    labelCenterY - sprite.cssHeight / 2,
+    sprite.cssWidth,
+    sprite.cssHeight,
+  );
   context.restore();
 }
 
@@ -643,8 +785,7 @@ function getBandLabel(text: string) {
     .replace(/Additive Manufacturing/gi, 'Additive Mfg.')
     .replace(/Rapid Prototyping/gi, 'Rapid Proto')
     .replace(/\s+/g, ' ')
-    .trim()
-    .toUpperCase();
+    .trim();
 }
 
 function drawSurfaceFilaments(
@@ -898,33 +1039,46 @@ function drawVectorPlanet(
   const surfacePhase = animTime * (0.11 + (seed % 7) * 0.008) + seed * 0.003;
   const atmospherePulse = 0.5 + 0.5 * Math.sin(animTime * 0.7 + seed * 0.02);
 
+  const vectorSpriteSet = getVectorPlanetSprites(color);
+  const surfaceColors = getVectorSurfaceColors(color);
+
   context.save();
   context.globalAlpha = layerOpacity;
   context.globalCompositeOperation = 'source-over';
   context.shadowBlur = 0;
 
-  const halo = context.createRadialGradient(
-    planet.x,
-    planet.y,
-    radius * 0.86,
-    planet.x,
-    planet.y,
-    radius * (1.32 + atmospherePulse * 0.06),
-  );
-  halo.addColorStop(0, rgba(color, isFront ? 0.34 : 0.16));
-  halo.addColorStop(0.44, rgba(color, isFront ? 0.16 : 0.08));
-  halo.addColorStop(1, rgba(color, 0));
-  context.beginPath();
-  context.arc(planet.x, planet.y, radius * 1.38, 0, TAU);
-  context.fillStyle = halo;
-  context.fill();
+  if (vectorSpriteSet) {
+    // Pre-gerasterde halo-sprite i.p.v. elke frame een radial-gradient vullen.
+    // De subtiele "ademing" (gradient-rand 1.32→1.38) reproduceren we door de
+    // blit-grootte mee te schalen; back-laag via lagere globalAlpha.
+    const pulseScale = (1.32 + atmospherePulse * 0.06) / VECTOR_HALO_OUTER;
+    const haloDraw = (VECTOR_HALO_SIZE * radius / VECTOR_SPRITE_RENDER_RADIUS) * pulseScale;
+    if (!isFront) context.globalAlpha = layerOpacity * VECTOR_HALO_BACK_ALPHA;
+    context.drawImage(vectorSpriteSet.halo, planet.x - haloDraw / 2, planet.y - haloDraw / 2, haloDraw, haloDraw);
+    context.globalAlpha = layerOpacity;
+  } else {
+    const halo = context.createRadialGradient(
+      planet.x,
+      planet.y,
+      radius * 0.86,
+      planet.x,
+      planet.y,
+      radius * (1.32 + atmospherePulse * 0.06),
+    );
+    halo.addColorStop(0, rgba(color, isFront ? 0.34 : 0.16));
+    halo.addColorStop(0.44, rgba(color, isFront ? 0.16 : 0.08));
+    halo.addColorStop(1, rgba(color, 0));
+    context.beginPath();
+    context.arc(planet.x, planet.y, radius * 1.38, 0, TAU);
+    context.fillStyle = halo;
+    context.fill();
+  }
 
   context.save();
   context.beginPath();
   context.arc(planet.x, planet.y, radius, 0, TAU);
   context.clip();
   context.translate(planet.x, planet.y);
-  const vectorSpriteSet = getVectorPlanetSprites(color);
   if (vectorSpriteSet) {
     context.drawImage(vectorSpriteSet.body, -radius, -radius, radius * 2, radius * 2);
   } else {
@@ -946,7 +1100,7 @@ function drawVectorPlanet(
     radius * 0.62,
     radius * 1.16,
     -0.08 + Math.sin(surfacePhase * 0.7) * 0.04,
-    mixRgba(color, { r: 38, g: 0, b: 92 }, 0.5, 0.34),
+    surfaceColors.patchA,
   );
   drawAtmospherePatch(
     context,
@@ -955,7 +1109,7 @@ function drawVectorPlanet(
     radius * 0.44,
     radius * 1.06,
     0.04 + Math.cos(surfacePhase * 0.6) * 0.05,
-    mixRgba(color, { r: 255, g: 255, b: 255 }, 0.32, 0.22),
+    surfaceColors.patchB,
   );
   drawAtmospherePatch(
     context,
@@ -964,7 +1118,7 @@ function drawVectorPlanet(
     radius * 0.34,
     radius * 0.96,
     -0.06,
-    mixRgba(color, { r: 255, g: 244, b: 90 }, 0.48, 0.25),
+    surfaceColors.patchC,
   );
 
   for (let index = 0; index < 7; index += 1) {
@@ -982,9 +1136,7 @@ function drawVectorPlanet(
       craterRadius * (1.05 + pseudoRandom(seed, index + 20) * 0.55),
       craterRadius * (0.86 + pseudoRandom(seed, index + 30) * 0.3),
       pseudoRandom(seed, index + 40) * TAU,
-      isBright
-        ? mixRgba(color, { r: 255, g: 242, b: 160 }, 0.34, 0.26)
-        : mixRgba(color, { r: 34, g: 0, b: 88 }, 0.62, 0.36),
+      isBright ? surfaceColors.craterBright : surfaceColors.craterDark,
     );
   }
 
@@ -1084,6 +1236,9 @@ export const OrbitRing = memo(function OrbitRing({
   const lastFocusedNodeRef = useRef<string | null>(null);
   const focusChangeThrottleRef = useRef(0);
   const renderedPlanetsRef = useRef<RenderedPlanet[]>([]);
+  // Actieve device-pixel-ratio waarmee de canvassen zijn opgezet. Gebruikt om
+  // label-sprites op de juiste resolutie te rasteren (crispe tekst).
+  const pixelRatioRef = useRef(1);
   const nodesRef = useRef(nodes);
   const onSelectNodeRef = useRef(onSelectNode);
   const onFocusChangeRef = useRef(onFocusChange);
@@ -1438,7 +1593,7 @@ export const OrbitRing = memo(function OrbitRing({
       // de tekst niet optisch dimmen. Alleen tekst wordt op deze laag getekend.
       for (const planet of planets) {
         if (hiddenId && planet.node.id === hiddenId) continue;
-        drawVectorPlanetLabelOverlay(labelContext, planet);
+        drawVectorPlanetLabelOverlay(labelContext, planet, pixelRatioRef.current);
       }
     }
 
@@ -1512,6 +1667,7 @@ export const OrbitRing = memo(function OrbitRing({
       const nextWidth = Math.max(1, Math.floor(rect.width));
       const nextHeight = Math.max(1, Math.floor(rect.height));
       const pixelRatio = Math.min(window.devicePixelRatio || 1, MAX_CANVAS_PIXEL_RATIO);
+      pixelRatioRef.current = pixelRatio;
 
       const sizeChanged = width !== nextWidth || height !== nextHeight;
       if (sizeChanged) {

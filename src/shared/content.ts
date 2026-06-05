@@ -175,8 +175,8 @@ export const contentData: ContentNode[] = [
   {
     id: 'xr',
     title: 'XR & Human Machine Interaction',
-    color: '#46B469',
-    gradient: 'from-green-500 to-lime-500',
+    color: '#662A88',
+    gradient: 'from-purple-600 to-fuchsia-500',
     theme: 'xr',
     content: {
       intro: 'XR en HMI maken digitale ondersteuning zichtbaar, testbaar en bruikbaar voor mensen op de werkvloer.',
@@ -191,8 +191,8 @@ export const contentData: ContentNode[] = [
       {
         id: 'xr-media',
         title: 'Lectoraat Media Design',
-        color: '#46B469',
-        gradient: 'from-green-400 to-green-600',
+        color: '#662A88',
+        gradient: 'from-purple-500 to-purple-700',
         theme: 'xr',
         content: {
           intro: 'Lectoraat Media Design onderzoekt hoe digitale systemen begrijpelijk, passend en betekenisvol worden voor gebruikers.',
@@ -207,8 +207,8 @@ export const contentData: ContentNode[] = [
       {
         id: 'xr-lean',
         title: 'Lectoraat LEAN',
-        color: '#A0EA00',
-        gradient: 'from-lime-400 to-green-500',
+        color: '#9B4DCA',
+        gradient: 'from-violet-400 to-purple-600',
         theme: 'xr',
         content: {
           intro: 'Lectoraat LEAN verbindt slim organiseren met smart technologie in manufacturing.',
@@ -223,8 +223,8 @@ export const contentData: ContentNode[] = [
       {
         id: 'xr-usability',
         title: 'Usability Lab',
-        color: '#6DB600',
-        gradient: 'from-lime-500 to-green-600',
+        color: '#7E3BA8',
+        gradient: 'from-purple-500 to-violet-700',
         theme: 'xr',
         content: {
           intro: 'Het Usability Lab is een testomgeving voor gebruikersonderzoek, observatie en interfacevalidatie.',
@@ -239,8 +239,8 @@ export const contentData: ContentNode[] = [
       {
         id: 'xr-toolkit',
         title: 'Toolkit',
-        color: '#9ABF49',
-        gradient: 'from-lime-400 to-green-400',
+        color: '#A878C8',
+        gradient: 'from-purple-300 to-violet-400',
         theme: 'xr',
         content: {
           intro: 'De XR/HMI-toolkit helpt om van werkproces naar prototype, gebruikerstest en implementatie te gaan.',
@@ -255,8 +255,8 @@ export const contentData: ContentNode[] = [
       {
         id: 'xr-cases',
         title: 'Cases',
-        color: '#2E8B57',
-        gradient: 'from-green-600 to-emerald-600',
+        color: '#4A1D6B',
+        gradient: 'from-purple-800 to-indigo-700',
         theme: 'xr',
         content: {
           intro: 'De XR/HMI-case is Flexibele werkinstructies: ondersteuning voor assemblagewerk in een omgeving met variëteit.',

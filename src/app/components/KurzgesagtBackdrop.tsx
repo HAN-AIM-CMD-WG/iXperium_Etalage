@@ -103,29 +103,29 @@ const palettes: Record<string, VectorPalette> = {
     starCool: '#FF8AE0',
   },
   xr: {
-    background: '#053040',
-    backgroundDeep: '#011418',
-    ink: '#011218',
+    background: '#2A0E4A',
+    backgroundDeep: '#120322',
+    ink: '#0E0220',
     cream: '#FFF2B8',
-    ringSolid: '#1FD98E',
-    ringDotted: '#A8FFD0',
-    ringAccent: '#B0FF35',
-    ringGlow: '#48FFE0',
-    capsuleBase: '#1FD98E',
-    capsuleAccent: '#B0FF35',
-    capsuleHighlight: '#48FFE0',
-    capsuleCore: '#E6FFE0',
+    ringSolid: '#8E3BC9',
+    ringDotted: '#D9B8FF',
+    ringAccent: '#C24BFF',
+    ringGlow: '#B96BFF',
+    capsuleBase: '#8E3BC9',
+    capsuleAccent: '#C24BFF',
+    capsuleHighlight: '#D9A8FF',
+    capsuleCore: '#F4E6FF',
     moonPrimary: '#FFE27A',
-    moonSecondary: '#6AFF8F',
+    moonSecondary: '#B36AFF',
     moonAccent: '#FF6A00',
-    planet: '#46F05D',
+    planet: '#8E44C9',
     planetRing: '#FFF2B8',
     planetBandCool: '#00D9FF',
     planetBandWarm: '#FFD400',
     planetBandPink: '#D84CFF',
     starWhite: '#FFFFFF',
     starWarm: '#FFE27A',
-    starCool: '#77FFE8',
+    starCool: '#B98CFF',
   },
   twin: {
     background: '#0A1044',
@@ -362,6 +362,12 @@ function GalacticDisk({ palette, diskSize, diskDots }: {
               const ry = rx * dot.ratio;
               const cx = centerX + rx * Math.cos(dot.angle);
               const cy = centerY + ry * Math.sin(dot.angle);
+              // Perf: laat slechts ~1/3 van de dots pulseren. Posities en
+              // dichtheid blijven identiek; de rest rendert statisch op een
+              // vaste mid-opacity (≈ gemiddelde van de pulse-keyframe). Dit
+              // schrapt ~100 continu animerende SVG-elementen → minder
+              // SVG-re-raster per frame.
+              const animated = idx % 3 === 0;
               return (
                 <circle
                   key={`dot-${idx}`}
@@ -369,13 +375,13 @@ function GalacticDisk({ palette, diskSize, diskDots }: {
                   cy={cy}
                   r={dot.size}
                   fill={colorForDot(dot.colorKind)}
-                  className="kurzgesagt-disk-dot"
-                  style={{
+                  className={animated ? 'kurzgesagt-disk-dot' : 'kurzgesagt-disk-dot--static'}
+                  style={animated ? {
                     animationDuration: `${dot.duration * 4}s`,
                     animationDelay: `${dot.delay}s`,
                     transformOrigin: `${cx}px ${cy}px`,
                     transformBox: 'fill-box',
-                  }}
+                  } : undefined}
                 />
               );
             })}
@@ -1318,13 +1324,16 @@ export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
         transition={COLOR_TRANSITION}
       />
 
-      {/* 11. Vignette die het oog naar centrum trekt */}
+      {/* 11. Vignette die het oog naar centrum trekt.
+            Voorheen mix-blend-mode: multiply — een full-screen, niet-geïsoleerde
+            composite-pass elke frame. Op de toch al donkere scène geeft een
+            gewone (source-over) radial-gradient met voor-gedonkerde rgba's
+            vrijwel hetzelfde beeld, zónder de blend-pass. */}
       <motion.div
         className="absolute inset-0"
-        style={{ mixBlendMode: 'multiply' }}
         initial={false}
         animate={{
-          background: `radial-gradient(ellipse at center, transparent 40%, ${palette.backgroundDeep} 96%, #000 100%)`,
+          background: `radial-gradient(ellipse at center, transparent 42%, ${mixColor(palette.backgroundDeep, { r: 0, g: 0, b: 0 }, 0.12, 0.9)} 94%, rgba(0, 0, 0, 0.96) 100%)`,
         }}
         transition={COLOR_TRANSITION}
       />
