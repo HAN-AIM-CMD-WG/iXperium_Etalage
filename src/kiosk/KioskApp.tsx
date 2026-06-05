@@ -9,6 +9,22 @@ import { useNavigationSocket } from '../shared/useNavigationSocket';
 
 const VECTOR_INK = '#07185F';
 const VECTOR_CREAM = '#FFF2B8';
+const DETAIL_EXIT_EASE: [number, number, number, number] = [0.65, 0, 0.35, 1];
+const DETAIL_ACCEL_EASE: [number, number, number, number] = [0.72, 0, 0.96, 0.62];
+const DETAIL_ENTER_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const MEDIA_ENTER_TRANSITION = { duration: 1.02, times: [0, 0.66, 1], ease: DETAIL_ENTER_EASE };
+const INFO_ENTER_TRANSITION = { duration: 1.08, times: [0, 0.62, 1], ease: DETAIL_ENTER_EASE, delay: 0.12 };
+const MEDIA_EXIT_TRANSITION = {
+  duration: 1.08,
+  times: [0, 0.15, 1],
+  ease: DETAIL_ACCEL_EASE,
+};
+const INFO_EXIT_TRANSITION = {
+  duration: 1.16,
+  times: [0, 0.16, 1],
+  ease: DETAIL_ACCEL_EASE,
+  delay: 0.08,
+};
 
 const themeCopy: Record<string, string> = {
   ai: 'Data, algoritmes en praktijkcases voor slimme besluitvorming.',
@@ -337,11 +353,59 @@ const KioskDetailPlanet = memo(function KioskDetailPlanet({
   const title = node ? compactTitle(node.title) : 'iXperium';
   const subtitle = getPlanetMicroCopy(mode);
   const image = node?.content?.image;
+  const themeClass = node?.theme ? ` kiosk-detail-planet--theme-${node.theme}` : '';
+  const enterDelay = mode === 'detail' ? 0.58 : 0;
+  const exitY = typeof window === 'undefined' ? [0, 18, -1200] : [0, 18, -window.innerHeight * 1.32];
 
   return (
-    <div className={`kiosk-detail-planet${image ? ' kiosk-detail-planet--has-image' : ''}`} style={style}>
+    <motion.div
+      className={`kiosk-detail-planet${image ? ' kiosk-detail-planet--has-image' : ''}${themeClass}`}
+      style={style}
+      transformTemplate={(_, generated) => `translate(-50%, -50%) ${generated}`}
+      initial={{
+        opacity: 0,
+        y: 42,
+        scale: 0.94,
+        rotate: -0.35,
+        filter: 'blur(16px) saturate(0.9)',
+        backdropFilter: 'blur(0px) saturate(1)',
+      }}
+      animate={{
+        opacity: [0, 0.88, 1],
+        y: [42, -10, 0],
+        scale: [0.94, 1.018, 1],
+        rotate: [-0.35, 0.16, 0],
+        filter: ['blur(16px) saturate(0.9)', 'blur(2px) saturate(1.04)', 'blur(0px) saturate(1)'],
+        backdropFilter: image ? 'blur(0px) saturate(1)' : 'blur(18px) saturate(1.25)',
+      }}
+      exit={{
+        y: exitY,
+        scale: [1, 1.014, 0.88],
+        rotate: [0, -0.18, -2.4],
+        opacity: [1, 1, 0],
+        filter: ['blur(0px) saturate(1)', 'blur(0px) saturate(1.04)', 'blur(16px) saturate(0.86)'],
+        transition: MEDIA_EXIT_TRANSITION,
+      }}
+      transition={enterDelay
+        ? { ...MEDIA_ENTER_TRANSITION, delay: enterDelay }
+        : MEDIA_ENTER_TRANSITION}
+    >
       {image ? (
-        <img src={image} alt={node?.title ?? 'iXperium Smart Industry'} loading="eager" />
+        <>
+          <img
+            className="kiosk-detail-planet__image"
+            src={image}
+            alt={node?.title ?? 'iXperium Smart Industry'}
+            loading="eager"
+          />
+          <img
+            className="kiosk-detail-planet__edge-image"
+            src={image}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+          />
+        </>
       ) : null}
       <span className="kiosk-detail-planet__field kiosk-detail-planet__field--one" />
       <span className="kiosk-detail-planet__field kiosk-detail-planet__field--two" />
@@ -356,7 +420,7 @@ const KioskDetailPlanet = memo(function KioskDetailPlanet({
         <h2>{title}</h2>
         <span>{subtitle}</span>
       </div>
-    </div>
+    </motion.div>
   );
 });
 
@@ -377,14 +441,44 @@ const KioskInfoPanel = memo(function KioskInfoPanel({
   const highlights = getHighlights(node);
   const applications = getApplications(node);
   const sourceLabel = node?.content?.sourceLabel ?? 'Projectdocument iXperium kiosk UI';
+  const enterDelay = (mode === 'detail' ? 0.58 : 0) + INFO_ENTER_TRANSITION.delay;
+  const exitY = typeof window === 'undefined' ? [0, 24, -1160] : [0, 24, -window.innerHeight * 1.28];
 
   return (
-    <div
+    <motion.div
       className="kiosk-detail-panel"
       style={{
         '--panel-accent': accentColor,
         '--panel-glow': rgbaHex(accentColor, 0.34),
       } as CSSProperties & Record<string, string>}
+      initial={{
+        opacity: 0,
+        x: 34,
+        y: 46,
+        scale: 0.955,
+        rotate: 0.28,
+        filter: 'blur(18px)',
+        backdropFilter: 'blur(0px) saturate(1)',
+      }}
+      animate={{
+        opacity: [0, 0.78, 1],
+        x: [34, -8, 0],
+        y: [46, -12, 0],
+        scale: [0.955, 1.018, 1],
+        rotate: [0.28, -0.12, 0],
+        filter: ['blur(18px)', 'blur(3px)', 'blur(0px)'],
+        backdropFilter: 'blur(30px) saturate(1.48)',
+      }}
+      exit={{
+        y: exitY,
+        x: [0, -4, 24],
+        scale: [1, 1.012, 0.9],
+        rotate: [0, 0.16, 1.8],
+        opacity: [1, 1, 0],
+        filter: ['blur(0px)', 'blur(0px)', 'blur(16px)'],
+        transition: INFO_EXIT_TRANSITION,
+      }}
+      transition={{ ...INFO_ENTER_TRANSITION, delay: enterDelay }}
     >
       <div className="kiosk-detail-panel__header">
         <div>
@@ -426,7 +520,7 @@ const KioskInfoPanel = memo(function KioskInfoPanel({
           <span>bronlaag</span>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 });
 
@@ -469,9 +563,9 @@ const KioskHandoffEntry = memo(function KioskHandoffEntry({
       animate={{ y: centerY, scale: 1, opacity: [0, 1, 1, 0] }}
       transition={{
         // ~0.5s delay: begint als de tafel-planeet net het scherm verlaat.
-        y: { type: 'spring', stiffness: 80, damping: 15, mass: 0.9, delay: 0.5 },
-        scale: { type: 'spring', stiffness: 80, damping: 15, delay: 0.5 },
-        opacity: { duration: 1.15, times: [0, 0.22, 0.7, 1], delay: 0.5 },
+        y: { duration: 1.08, ease: DETAIL_EXIT_EASE, delay: 0.5 },
+        scale: { duration: 1.08, ease: DETAIL_EXIT_EASE, delay: 0.5 },
+        opacity: { duration: 1.18, times: [0, 0.2, 0.74, 1], ease: DETAIL_EXIT_EASE, delay: 0.5 },
       }}
       onAnimationComplete={onComplete}
     >
@@ -534,8 +628,6 @@ export function KioskApp() {
   // NIEUW detail-onderwerp binnenkomt (de planeet die van de tafel af vloog).
   const [handoff, setHandoff] = useState<{ color: string; image: string | null } | null>(null);
   const prevDetailIdRef = useRef<string | null>(null);
-  const isDetailEntry = mode === 'detail';
-
   useEffect(() => {
     const detailId = mode === 'detail' ? displayNode?.id ?? null : null;
     if (detailId && detailId !== prevDetailIdRef.current) {
@@ -569,35 +661,33 @@ export function KioskApp() {
       </AnimatePresence>
 
       <main className="kiosk-detail-main relative z-10 flex min-h-screen items-center px-[4.8vw] pb-12 pt-32">
-        <AnimatePresence mode="wait">
-          <motion.section
-            key={viewKey}
-            className="kiosk-detail-layout"
-            // Bestaande UI vliegt OMHOOG het scherm uit om ruimte te maken
-            // (op het moment dat de planeet de tafel verlaat). Daarna komt de
-            // handoff-bol van onder op en klapt de nieuwe detail-UI uit het
-            // midden uit.
-            initial={isDetailEntry ? { opacity: 0, scale: 0.62 } : { opacity: 0 }}
-            animate={isDetailEntry ? { opacity: 1, scale: 1 } : { opacity: 1 }}
-            exit={{ y: '-115vh', opacity: 0.85, transition: { duration: 0.5, ease: [0.5, 0, 0.75, 0] } }}
-            transition={
-              isDetailEntry
-                ? { duration: 0.55, ease: [0.34, 1.56, 0.64, 1], delay: 0.6 }
-                : { duration: 0.4, ease: 'easeOut' }
-            }
-          >
-            <div className="kiosk-detail-planet-zone">
-              <KioskDetailPlanet node={displayNode} mode={mode} accentColor={accentColor} />
-            </div>
+        <motion.section
+          className="kiosk-detail-layout"
+          initial={{ opacity: 0, y: 18, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: 0.48, ease: DETAIL_ENTER_EASE }}
+        >
+          <div className="kiosk-detail-planet-zone">
+            <AnimatePresence mode="wait">
+              <KioskDetailPlanet
+                key={`planet-${viewKey}`}
+                node={displayNode}
+                mode={mode}
+                accentColor={accentColor}
+              />
+            </AnimatePresence>
+          </div>
 
+          <AnimatePresence mode="wait">
             <KioskInfoPanel
+              key={`panel-${viewKey}`}
               node={displayNode}
               mode={mode}
               accentColor={accentColor}
               orbitItems={orbitItems}
             />
-          </motion.section>
-        </AnimatePresence>
+          </AnimatePresence>
+        </motion.section>
       </main>
     </div>
   );

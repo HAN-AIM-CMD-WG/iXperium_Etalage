@@ -1244,16 +1244,16 @@
 
 .kiosk-detail-layout {
   display: grid;
-  width: min(100%, 96rem);
+  width: min(100%, 104rem);
   margin: 0 auto;
-  grid-template-columns: minmax(30rem, 0.92fr) minmax(30rem, 1fr);
+  grid-template-columns: minmax(34rem, 1.08fr) minmax(29rem, 0.92fr);
   align-items: center;
-  gap: clamp(2rem, 4vw, 4.25rem);
+  gap: clamp(2rem, 3.4vw, 3.75rem);
 }
 
 .kiosk-detail-planet-zone {
   position: relative;
-  min-height: min(63vh, 38rem);
+  min-height: min(72vh, 44rem);
   overflow: visible;
   isolation: isolate;
 }
@@ -1387,26 +1387,25 @@
   left: 50%;
   top: 50%;
   z-index: 2;
-  /* Groter formaat zodat de foto's beter tot hun recht komen. */
-  width: clamp(32rem, 46vw, 52rem);
+  width: clamp(38rem, 52vw, 62rem);
   max-width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 10;
   isolation: isolate;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 2.25rem;
   background:
     radial-gradient(circle at 0% 0%, var(--kiosk-accent-glow, rgba(70, 180, 105, 0.34)), transparent 38%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
     rgba(7, 16, 22, 0.64);
   box-shadow:
-    0 28px 92px rgba(0, 0, 0, 0.32),
+    0 38px 120px rgba(0, 0, 0, 0.42),
+    0 0 56px var(--kiosk-accent-glow, rgba(70, 180, 105, 0.18)),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
   filter: none;
   backdrop-filter: blur(18px) saturate(1.25);
   -webkit-backdrop-filter: blur(18px) saturate(1.25);
   transform: translate(-50%, -50%);
-  animation: kiosk-detail-planet-float 11s ease-in-out infinite;
 }
 
 .kiosk-detail-planet::before {
@@ -1422,39 +1421,104 @@
 
 .kiosk-detail-planet::after {
   position: absolute;
-  inset: 1.15rem;
+  inset: 1rem;
   z-index: 2;
   pointer-events: none;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 1.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 1.65rem;
   content: '';
 }
 
-.kiosk-detail-planet img {
+.kiosk-detail-planet__image,
+.kiosk-detail-planet__edge-image {
   position: absolute;
   inset: 0;
   z-index: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transform: scale(1.035);
+  filter: saturate(1.08) contrast(1.04);
+  transition: opacity 0.45s ease-out;
+  will-change: opacity, transform;
+}
+
+.kiosk-detail-planet__edge-image {
+  --media-edge-magnify: clamp(1.35rem, 2vw, 2.2rem);
+  z-index: 3;
+  opacity: 0.58;
+  transform: scale(1.115);
+  filter: saturate(1.22) contrast(1.1) brightness(1.08);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(
+      to right,
+      #000 0 var(--media-edge-magnify),
+      transparent var(--media-edge-magnify) calc(100% - var(--media-edge-magnify)),
+      #000 calc(100% - var(--media-edge-magnify)) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      #000 0 var(--media-edge-magnify),
+      transparent var(--media-edge-magnify) calc(100% - var(--media-edge-magnify)),
+      #000 calc(100% - var(--media-edge-magnify)) 100%
+    );
+  mask:
+    linear-gradient(
+      to right,
+      #000 0 var(--media-edge-magnify),
+      transparent var(--media-edge-magnify) calc(100% - var(--media-edge-magnify)),
+      #000 calc(100% - var(--media-edge-magnify)) 100%
+    ),
+    linear-gradient(
+      to bottom,
+      #000 0 var(--media-edge-magnify),
+      transparent var(--media-edge-magnify) calc(100% - var(--media-edge-magnify)),
+      #000 calc(100% - var(--media-edge-magnify)) 100%
+    );
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+}
+
+.kiosk-detail-planet--theme-ai .kiosk-detail-planet__image {
+  object-position: 50% 38%;
+  transform: scale(1.035) translateY(4.5%);
+}
+
+.kiosk-detail-planet--theme-ai .kiosk-detail-planet__edge-image {
+  object-position: 50% 38%;
+  transform: scale(1.115) translateY(4.5%);
 }
 
 .kiosk-detail-planet--has-image {
-  /* Image is nu de achtergrond — geen glas-bg meer + geen backdrop-filter. */
   background: #05080f;
+  box-shadow:
+    0 42px 128px rgba(0, 0, 0, 0.48),
+    0 0 68px var(--kiosk-accent-glow, rgba(70, 180, 105, 0.22)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.13);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 
-/* Geen kleur-overlay meer over de foto. Label krijgt eigen text-shadow
-   voor leesbaarheid; ::before pseudo wordt onzichtbaar gemaakt. */
 .kiosk-detail-planet--has-image::before {
-  display: none;
+  display: block;
+  background:
+    linear-gradient(180deg, rgba(5, 8, 23, 0.08) 0%, transparent 34%),
+    linear-gradient(0deg, rgba(5, 8, 23, 0.74) 0%, rgba(5, 8, 23, 0.30) 32%, transparent 62%),
+    radial-gradient(ellipse at 16% 18%, rgba(255, 255, 255, 0.14) 0%, transparent 34%);
 }
 
-/* Inset border (::after) gaat ook weg bij foto — geen randje over het beeld. */
 .kiosk-detail-planet--has-image::after {
-  display: none;
+  display: block;
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 0 26px rgba(255, 255, 255, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 -56px 90px rgba(5, 8, 23, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(3px) saturate(1.42) contrast(1.06);
+  -webkit-backdrop-filter: blur(3px) saturate(1.42) contrast(1.06);
 }
 
 /* Bij aanwezige foto: alle decoratieve drift-lagen verbergen.
@@ -1464,13 +1528,6 @@
 .kiosk-detail-planet--has-image .kiosk-detail-planet__crater,
 .kiosk-detail-planet--has-image .kiosk-detail-planet__shine {
   display: none;
-}
-
-/* Soepele crossfade bij foto-wissel — CSS transition op opacity is
-   GPU-composited en stutter-vrij. */
-.kiosk-detail-planet img {
-  transition: opacity 0.45s ease-out;
-  will-change: opacity;
 }
 
 .kiosk-detail-planet__field,
@@ -1580,18 +1637,24 @@
 }
 
 .kiosk-detail-planet--has-image .kiosk-detail-planet__label {
-  left: 1.75rem;
-  right: 1.75rem;
-  bottom: 1.65rem;
+  left: 1.55rem;
+  right: auto;
+  bottom: 1.45rem;
   top: auto;
-  width: auto;
+  width: min(72%, 28rem);
   transform: none;
   align-items: flex-start;
   text-align: left;
-  /* Sterke text-shadow per letter zodat de label leesbaar blijft op alle
-     foto's zonder dat we een gradient-overlay over de foto hoeven te
-     leggen. drop-shadow filter is GPU-composited. */
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 18px rgba(0, 0, 0, 0.6));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
+    rgba(5, 8, 23, 0.28);
+  padding: 1rem 1.1rem 1.05rem;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.30);
+  backdrop-filter: blur(0px) saturate(1);
+  -webkit-backdrop-filter: blur(0px) saturate(1);
+  animation: kiosk-media-caption-frost-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
 }
 
 /* Eyebrow: kleine caps, accent kleur, subtiele tracking */
@@ -1622,8 +1685,12 @@
 }
 
 .kiosk-detail-planet--has-image .kiosk-detail-planet__label h2 {
-  max-width: 28rem;
-  font-size: clamp(1.8rem, 2.8vw, 3rem);
+  max-width: 24rem;
+  margin-top: 0.42rem;
+  font-size: clamp(1.65rem, 2.2vw, 2.55rem);
+  text-shadow:
+    0 2px 18px rgba(0, 0, 0, 0.58),
+    0 0 22px var(--kiosk-accent-glow, rgba(70, 180, 105, 0.26));
 }
 
 /* Subtitel: rustig, lager contrast, geen kapitalen */
@@ -1643,22 +1710,47 @@
 
 .kiosk-detail-planet--has-image .kiosk-detail-planet__label span {
   max-width: 18rem;
-  margin-top: 0.7rem;
+  margin-top: 0.6rem;
+  padding-top: 0.55rem;
 }
 
 .kiosk-detail-panel {
   position: relative;
   z-index: 4;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.19);
   border-radius: 2rem;
   background:
-    radial-gradient(circle at 0% 0%, var(--panel-glow, rgba(102, 42, 136, 0.28)), transparent 36%),
-    rgba(102, 42, 136, 0.5);
+    radial-gradient(circle at 0% 0%, var(--panel-glow, rgba(102, 42, 136, 0.24)), transparent 38%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.04)),
+    rgba(48, 12, 82, 0.34);
   padding: clamp(1.45rem, 2.1vw, 2.35rem);
   color: #ffffff;
-  box-shadow: 0 28px 92px rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(18px);
+  box-shadow:
+    0 30px 96px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.11);
+  backdrop-filter: blur(30px) saturate(1.48);
+  -webkit-backdrop-filter: blur(30px) saturate(1.48);
+}
+
+.kiosk-detail-panel::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.19), rgba(255, 255, 255, 0.045)),
+    radial-gradient(circle at 8% 0%, var(--panel-glow, rgba(102, 42, 136, 0.26)), transparent 44%);
+  opacity: 0;
+  backdrop-filter: blur(0px) saturate(1);
+  -webkit-backdrop-filter: blur(0px) saturate(1);
+  content: '';
+  animation: kiosk-info-frost-fade 1.18s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+
+.kiosk-detail-panel > * {
+  position: relative;
+  z-index: 1;
 }
 
 .kiosk-detail-shell .visual-style-toggle {
@@ -1859,13 +1951,12 @@
 }
 
 [data-visual-style='kurzgesagt'] .kiosk-detail-planet {
-  /* Zelfde media-placeholdervorm als het tekstvak ernaast. */
-  width: clamp(24rem, 34vw, 36rem);
+  width: clamp(38rem, 52vw, 62rem);
   max-width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 1.65rem;
+  border-radius: 2.25rem;
   filter: none;
   background:
     radial-gradient(circle at 0% 0%, var(--kiosk-accent-glow, rgba(70, 180, 105, 0.34)), transparent 38%),
@@ -1876,9 +1967,9 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
-[data-visual-style='kurzgesagt'] .kiosk-detail-planet__field,
-[data-visual-style='kurzgesagt'] .kiosk-detail-planet__crater,
-[data-visual-style='kurzgesagt'] .kiosk-detail-planet__shine {
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet:not(.kiosk-detail-planet--has-image) .kiosk-detail-planet__field,
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet:not(.kiosk-detail-planet--has-image) .kiosk-detail-planet__crater,
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet:not(.kiosk-detail-planet--has-image) .kiosk-detail-planet__shine {
   display: block;
 }
 
@@ -1895,6 +1986,20 @@
   text-shadow:
     0 0 14px var(--kiosk-accent-glow, rgba(255, 242, 184, 0.55)),
     5px 6px 0 #07185f;
+}
+
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-planet--has-image .kiosk-detail-planet__label p,
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-planet--has-image .kiosk-detail-planet__label span {
+  color: rgba(255, 255, 255, 0.78);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.46);
+}
+
+.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-planet--has-image .kiosk-detail-planet__label h2 {
+  -webkit-text-stroke: 0;
+  color: #ffffff;
+  text-shadow:
+    0 2px 18px rgba(0, 0, 0, 0.58),
+    0 0 22px var(--kiosk-accent-glow, rgba(70, 180, 105, 0.26));
 }
 
 [data-visual-style='kurzgesagt'] .kiosk-detail-panel {
@@ -1956,8 +2061,8 @@
     rgba(7, 16, 22, 0.34);
   color: #ffffff;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(22px) saturate(1.35);
-  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  backdrop-filter: blur(30px) saturate(1.48);
+  -webkit-backdrop-filter: blur(30px) saturate(1.48);
 }
 
 .kiosk-detail-shell[data-visual-style='kurzgesagt'] .visual-style-toggle:hover {
@@ -1969,9 +2074,9 @@
 .kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel {
   border-radius: 1.65rem;
   background:
-    radial-gradient(circle at 0% 0%, var(--panel-glow, rgba(70, 180, 105, 0.24)), transparent 36%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
-    rgba(5, 8, 23, 0.42);
+    radial-gradient(circle at 0% 0%, var(--panel-glow, rgba(70, 180, 105, 0.22)), transparent 38%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.045)),
+    rgba(18, 8, 34, 0.34);
 }
 
 .kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-orbit-chip {
@@ -2134,6 +2239,41 @@
   }
 }
 
+@keyframes kiosk-media-caption-frost-in {
+  0% {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+      rgba(5, 8, 23, 0.08);
+    backdrop-filter: blur(0px) saturate(1);
+    -webkit-backdrop-filter: blur(0px) saturate(1);
+  }
+  100% {
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
+      rgba(5, 8, 23, 0.28);
+    backdrop-filter: blur(14px) saturate(1.25);
+    -webkit-backdrop-filter: blur(14px) saturate(1.25);
+  }
+}
+
+@keyframes kiosk-info-frost-fade {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px) saturate(1);
+    -webkit-backdrop-filter: blur(0px) saturate(1);
+  }
+  58% {
+    opacity: 0.72;
+    backdrop-filter: blur(14px) saturate(1.24);
+    -webkit-backdrop-filter: blur(14px) saturate(1.24);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(30px) saturate(1.48);
+    -webkit-backdrop-filter: blur(30px) saturate(1.48);
+  }
+}
+
 @media (max-width: 1180px) {
   .kiosk-detail-layout {
     grid-template-columns: 1fr;
@@ -2141,7 +2281,7 @@
   }
 
   .kiosk-detail-planet-zone {
-    min-height: 38rem;
+    min-height: min(58vh, 38rem);
   }
 
   .kiosk-detail-panel {
@@ -2191,13 +2331,14 @@
   }
 
   .kiosk-detail-planet {
-    width: min(84vw, 24rem);
+    width: min(88vw, 28rem);
+    aspect-ratio: 4 / 3;
   }
 
   .kiosk-detail-planet--has-image .kiosk-detail-planet__label {
     left: 1.15rem;
-    right: 1.15rem;
     bottom: 1.05rem;
+    width: calc(100% - 2.3rem);
   }
 
   .kiosk-detail-planet--has-image .kiosk-detail-planet__label h2 {

@@ -27,7 +27,11 @@ const TABLE_SUBMENU_ORBIT = {
 // grootte van de centrum-planeet.
 const CENTER_FLY_DIAMETER = 300;
 const FOCUS_SYNC_THROTTLE_MS = 220;
-const PANEL_BACKGROUND = 'rgba(30, 8, 58, 0.44)';
+const PANEL_BACKGROUND = 'rgba(30, 8, 58, 0.30)';
+const PANEL_LAYOUT_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const PANEL_LAYOUT_TRANSITION = {
+  layout: { duration: 0.48, ease: PANEL_LAYOUT_EASE },
+};
 
 function hexToRgb(hex: string) {
   const normalized = hex.replace('#', '');
@@ -170,7 +174,9 @@ const RouteCommandPanel = memo(function RouteCommandPanel({
   onSelectNode: (node: ContentNode) => void;
 }) {
   return (
-    <aside
+    <motion.aside
+      layout
+      transition={PANEL_LAYOUT_TRANSITION}
       className="pointer-events-auto fixed left-8 top-[18vh] z-[90] flex w-[min(24vw,21rem)] max-w-[21rem] flex-col gap-4 rounded-[1.875rem] border border-white/15 p-5 text-white shadow-[0_24px_90px_rgba(0,0,0,0.30)] backdrop-blur-xl max-[1120px]:hidden"
       style={{ backgroundColor: PANEL_BACKGROUND }}
     >
@@ -214,7 +220,7 @@ const RouteCommandPanel = memo(function RouteCommandPanel({
           );
         })}
       </div>
-    </aside>
+    </motion.aside>
   );
 });
 
@@ -236,7 +242,9 @@ const FocusPreviewPanel = memo(function FocusPreviewPanel({
   const barColor = mixHex(routeNode.color, '#FFFFFF', 0.32);
 
   return (
-    <aside
+    <motion.aside
+      layout
+      transition={PANEL_LAYOUT_TRANSITION}
       className="pointer-events-none fixed right-8 top-[16vh] z-[90] flex max-h-[74vh] w-[min(24vw,21rem)] max-w-[21rem] flex-col gap-4 rounded-[1.875rem] border border-white/15 p-5 text-white shadow-[0_24px_90px_rgba(0,0,0,0.30)] backdrop-blur-xl max-[1120px]:hidden"
       style={{ backgroundColor: PANEL_BACKGROUND }}
     >
@@ -303,7 +311,7 @@ const FocusPreviewPanel = memo(function FocusPreviewPanel({
           </div>
         )}
       </div>
-    </aside>
+    </motion.aside>
   );
 });
 
