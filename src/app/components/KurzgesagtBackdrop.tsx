@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { memo, useId, useMemo } from 'react';
+import { memo, useCallback, useId, useMemo, useRef, useState } from 'react';
 import { ease } from '../motion/easing';
 
 interface KurzgesagtBackdropProps {
@@ -213,6 +213,79 @@ function getPalette(theme: string) {
 const COLOR_TRANSITION = { duration: 1.8, ease: ease.soft } as const;
 const ORBIT_RING_ROTATION_DEG = -20;
 
+/* ---------------- Theme crossfade stack ---------------- */
+
+interface CrossfadeEntry {
+  theme: string;
+  serial: number;
+}
+
+/**
+ * Crossfade tussen statische, per-theme gerenderde lagen.
+ *
+ * Voorheen animeerden grote vlakken (full-screen gradients, de 1800px
+ * disk-SVG, nebula-fills) hun kleur per frame via motion/CSS-transitions.
+ * Elke geanimeerde kleurstap = style recalc + volledige repaint van die laag,
+ * 60×/s gedurende de hele 1.8s transitie — en omdat het thema tijdens het
+ * draaien continu wisselt was dit een quasi-permanente paint-belasting.
+ *
+ * Nu wordt elke laag per theme één keer gerasterd en faden we de nieuwe laag
+ * met `opacity` (GPU-composited, geen repaint) over de oude heen. Eindbeeld is
+ * identiek; halverwege is het een crossfade i.p.v. kleur-interpolatie — bij
+ * exact overlappende geometrie visueel gelijkwaardig.
+ *
+ * Bij snelle opeenvolgende wissels stapelen maximaal 3 lagen; zodra de
+ * bovenste volledig dekt worden onderliggende lagen opgeruimd.
+ */
+function ThemeCrossfadeStack({
+  themeKey,
+  className,
+  style,
+  renderLayer,
+}: {
+  themeKey: string;
+  className?: string;
+  style?: React.CSSProperties;
+  renderLayer: (theme: string) => React.ReactNode;
+}) {
+  const [stack, setStack] = useState<CrossfadeEntry[]>(() => [{ theme: themeKey, serial: 0 }]);
+  const serialRef = useRef(0);
+
+  // Render-phase update: nieuwe theme-laag direct in deze render meenemen
+  // zodat er geen frame met verouderde kleuren commit.
+  let layers = stack;
+  if (stack[stack.length - 1].theme !== themeKey) {
+    serialRef.current += 1;
+    layers = [...stack.slice(-2), { theme: themeKey, serial: serialRef.current }];
+    setStack(layers);
+  }
+
+  const handleLayerSettled = useCallback((serial: number) => {
+    // Laag `serial` dekt nu volledig — alles eronder is onzichtbaar en mag weg.
+    setStack((current) => {
+      const index = current.findIndex((entry) => entry.serial === serial);
+      return index > 0 ? current.slice(index) : current;
+    });
+  }, []);
+
+  return (
+    <div className={className} style={style}>
+      {layers.map((entry) => (
+        <motion.div
+          key={entry.serial}
+          className="absolute inset-0"
+          initial={entry.serial === 0 ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={COLOR_TRANSITION}
+          onAnimationComplete={() => handleLayerSettled(entry.serial)}
+        >
+          {renderLayer(entry.theme)}
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 /* ---------------- Galactic Disk ---------------- */
 
 /**
@@ -285,30 +358,37 @@ function generateRingDots(seed: number, rings: DiskRingConfig[]) {
   return dots;
 }
 
+function diskDotColor(palette: VectorPalette, kind: 'white' | 'warm' | 'cool' | 'glow') {
+  switch (kind) {
+    case 'white': return palette.starWhite;
+    case 'warm': return palette.starWarm;
+    case 'cool': return palette.starCool;
+    case 'glow': return palette.ringGlow;
+  }
+}
+
 /**
  * Galactic disk — grote, vaste concentrische ringstructuur achter de planeet.
  * Elke ring is een tilted ellipse via dezelfde -20° orientatie als de orbit ring
  * (matcht ORBIT_ROTATION uit OrbitRing.tsx).
  *
- * De `motion.ellipse` animeert automatisch de `stroke` attribute kleuren
- * wanneer het palette wisselt → soepele theme-crossfade.
+ * Perf-opzet:
+ * - Ringen + statische dots zitten in één SVG die per theme statisch is en via
+ *   ThemeCrossfadeStack opacity-crossfade't. Geen per-frame stroke/fill
+ *   animaties meer op de grote (1800px) SVG.
+ * - De pulserende dots zijn losse DOM-divs: CSS transform/opacity animaties op
+ *   HTML-elementen draaien op de compositor-thread, terwijl dezelfde animatie
+ *   op SVG-children elke frame een re-raster van de hele SVG forceerde.
  */
-function GalacticDisk({ palette, diskSize, diskDots }: {
+function GalacticDisk({ themeKey, palette, diskSize, diskDots }: {
+  themeKey: string;
   palette: VectorPalette;
   diskSize: number;
   diskDots: ReturnType<typeof generateRingDots>;
 }) {
-  const centerX = 0;
-  const centerY = 0;
-
-  const colorForDot = (kind: 'white' | 'warm' | 'cool' | 'glow') => {
-    switch (kind) {
-      case 'white': return palette.starWhite;
-      case 'warm': return palette.starWarm;
-      case 'cool': return palette.starCool;
-      case 'glow': return palette.ringGlow;
-    }
-  };
+  const tiltRad = (ORBIT_RING_ROTATION_DEG * Math.PI) / 180;
+  const tiltCos = Math.cos(tiltRad);
+  const tiltSin = Math.sin(tiltRad);
 
   return (
     <div
@@ -322,72 +402,95 @@ function GalacticDisk({ palette, diskSize, diskDots }: {
         marginTop: -diskSize / 2,
       }}
     >
-      <div style={{ width: '100%', height: '100%' }}>
-        <svg
-          viewBox={`${-diskSize / 2} ${-diskSize / 2} ${diskSize} ${diskSize}`}
-          width="100%"
-          height="100%"
-          style={{ overflow: 'visible' }}
-        >
-          {/* Kantelperspectief via g-transform — matcht orbit ring tilt */}
-          <g transform={`rotate(${ORBIT_RING_ROTATION_DEG} ${centerX} ${centerY})`}>
-            {DISK_RINGS.map((ring, idx) => {
-              const rx = (diskSize / 2) * ring.rBase;
-              const ry = rx * ring.ratio;
-              const dash = dashFor(ring.style, ring.width);
-              return (
-                <motion.ellipse
-                  key={`ring-${idx}`}
-                  cx={centerX}
-                  cy={centerY}
-                  rx={rx}
-                  ry={ry}
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeWidth={ring.width}
-                  strokeDasharray={dash}
-                  initial={false}
-                  animate={{
-                    stroke: palette[ring.colorKey],
-                    opacity: ring.opacity,
-                  }}
-                  transition={COLOR_TRANSITION}
-                />
-              );
-            })}
+      <ThemeCrossfadeStack
+        themeKey={themeKey}
+        className="absolute inset-0"
+        renderLayer={(layerTheme) => {
+          const layerPalette = getPalette(layerTheme);
+          return (
+            <svg
+              viewBox={`${-diskSize / 2} ${-diskSize / 2} ${diskSize} ${diskSize}`}
+              width="100%"
+              height="100%"
+              style={{ overflow: 'visible' }}
+            >
+              {/* Kantelperspectief via g-transform — matcht orbit ring tilt */}
+              <g transform={`rotate(${ORBIT_RING_ROTATION_DEG} 0 0)`}>
+                {DISK_RINGS.map((ring, idx) => {
+                  const rx = (diskSize / 2) * ring.rBase;
+                  const ry = rx * ring.ratio;
+                  const dash = dashFor(ring.style, ring.width);
+                  return (
+                    <ellipse
+                      key={`ring-${idx}`}
+                      cx={0}
+                      cy={0}
+                      rx={rx}
+                      ry={ry}
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeWidth={ring.width}
+                      strokeDasharray={dash}
+                      stroke={layerPalette[ring.colorKey]}
+                      opacity={ring.opacity}
+                    />
+                  );
+                })}
 
-            {/* Dots langs de ringen — "sterren in de disk" */}
-            {diskDots.map((dot, idx) => {
-              const rx = (diskSize / 2) * dot.rBase;
-              const ry = rx * dot.ratio;
-              const cx = centerX + rx * Math.cos(dot.angle);
-              const cy = centerY + ry * Math.sin(dot.angle);
-              // Perf: laat slechts ~1/3 van de dots pulseren. Posities en
-              // dichtheid blijven identiek; de rest rendert statisch op een
-              // vaste mid-opacity (≈ gemiddelde van de pulse-keyframe). Dit
-              // schrapt ~100 continu animerende SVG-elementen → minder
-              // SVG-re-raster per frame.
-              const animated = idx % 3 === 0;
-              return (
-                <circle
-                  key={`dot-${idx}`}
-                  cx={cx}
-                  cy={cy}
-                  r={dot.size}
-                  fill={colorForDot(dot.colorKind)}
-                  className={animated ? 'kurzgesagt-disk-dot' : 'kurzgesagt-disk-dot--static'}
-                  style={animated ? {
-                    animationDuration: `${dot.duration * 4}s`,
-                    animationDelay: `${dot.delay}s`,
-                    transformOrigin: `${cx}px ${cy}px`,
-                    transformBox: 'fill-box',
-                  } : undefined}
-                />
-              );
-            })}
-          </g>
-        </svg>
-      </div>
+                {/* Statische dots langs de ringen — "sterren in de disk".
+                    Vaste mid-opacity ≈ gemiddelde van de pulse-keyframe zodat
+                    het sterrenveld even dicht oogt als de pulserende subset. */}
+                {diskDots.map((dot, idx) => {
+                  if (idx % 3 === 0) return null;
+                  const rx = (diskSize / 2) * dot.rBase;
+                  const ry = rx * dot.ratio;
+                  return (
+                    <circle
+                      key={`dot-${idx}`}
+                      cx={rx * Math.cos(dot.angle)}
+                      cy={ry * Math.sin(dot.angle)}
+                      r={dot.size}
+                      fill={diskDotColor(layerPalette, dot.colorKind)}
+                      className="kurzgesagt-disk-dot--static"
+                    />
+                  );
+                })}
+              </g>
+            </svg>
+          );
+        }}
+      />
+
+      {/* Pulserende dots — zelfde posities/dichtheid als voorheen (1/3 van het
+          veld), maar als composited divs buiten de SVG. De -20° kanteling van
+          de disk is in de positie verrekend. */}
+      {diskDots.map((dot, idx) => {
+        if (idx % 3 !== 0) return null;
+        const rx = (diskSize / 2) * dot.rBase;
+        const ry = rx * dot.ratio;
+        const cx = rx * Math.cos(dot.angle);
+        const cy = ry * Math.sin(dot.angle);
+        const x = cx * tiltCos - cy * tiltSin;
+        const y = cx * tiltSin + cy * tiltCos;
+        return (
+          <div
+            key={`dot-${idx}`}
+            className="kurzgesagt-disk-dot"
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              width: dot.size * 2,
+              height: dot.size * 2,
+              marginLeft: x - dot.size,
+              marginTop: y - dot.size,
+              backgroundColor: diskDotColor(palette, dot.colorKind),
+              animationDuration: `${dot.duration * 4}s`,
+              animationDelay: `${dot.delay}s`,
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -654,13 +757,13 @@ function NebulaCloud({
  * meeademt met de ring rotatie.
  */
 function CapsuleStrip({
-  palette,
+  themeKey,
   clusters,
   direction,
   durationSec,
   containerStyle,
 }: {
-  palette: VectorPalette;
+  themeKey: string;
   clusters: Array<{ variant: number; xPct: number; yPct: number; size: number; rotate: number; flipX?: boolean; opacity?: number }>;
   direction: 1 | -1;
   durationSec: number;
@@ -725,13 +828,26 @@ function CapsuleStrip({
                   '--cluster-delay': string;
                 }}
               >
-                <NebulaCloud
-                  variant={cluster.variant}
-                  palette={palette}
-                  size={cluster.size}
-                  flipX={cluster.flipX}
-                  rotate={0}
-                  opacity={cluster.opacity ?? 1}
+                {/* Per theme een statisch gerasterde wolk; kleurwissel als
+                    opacity-crossfade i.p.v. per-frame fill/stroke transitions
+                    (die de hele nebula-SVG elke frame opnieuw rasterden). */}
+                <ThemeCrossfadeStack
+                  themeKey={themeKey}
+                  style={{
+                    position: 'relative',
+                    width: cluster.size,
+                    height: (cluster.size / 320) * 180,
+                  }}
+                  renderLayer={(layerTheme) => (
+                    <NebulaCloud
+                      variant={cluster.variant}
+                      palette={getPalette(layerTheme)}
+                      size={cluster.size}
+                      flipX={cluster.flipX}
+                      rotate={0}
+                      opacity={cluster.opacity ?? 1}
+                    />
+                  )}
                 />
               </div>
             ))}
@@ -1032,6 +1148,9 @@ export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
   showCentralPlanet = true,
 }: KurzgesagtBackdropProps) {
   const palette = useMemo(() => getPalette(theme), [theme]);
+  // Genormaliseerde key: onbekende themes vallen terug op 'main', zodat een
+  // crossfade tussen twee identieke palettes nooit getriggerd wordt.
+  const themeKey = palettes[theme] ? theme : 'main';
   const planetColor = centralPlanetColor ?? palette.planet;
   const centralPlanetPaint = useMemo(() => ({
     body: `linear-gradient(100deg, ${mixColor(planetColor, { r: 72, g: 0, b: 170 }, 0.28)} 0%, ${mixColor(planetColor, { r: 255, g: 26, b: 176 }, 0.42)} 38%, ${mixColor(planetColor, { r: 255, g: 120, b: 0 }, 0.54)} 68%, ${mixColor(planetColor, { r: 255, g: 244, b: 34 }, 0.72)} 100%)`,
@@ -1120,23 +1239,29 @@ export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
   const ringCycleSec = 34;
 
   return (
-    <motion.div
+    <div
       className="kurzgesagt-backdrop fixed inset-0 overflow-hidden pointer-events-none"
       aria-hidden="true"
-      initial={false}
-      animate={{ backgroundColor: palette.backgroundDeep }}
-      transition={COLOR_TRANSITION}
     >
-      {/* 1. Radial halo — lichtere kern, donker naar de rand.
-            Twee lagen zorgen voor een soepele gradient-transitie: basis kleur
-            via de backdrop backgroundColor, halo via deze overlay. */}
-      <motion.div
+      {/* 0+1. Basiskleur + radial halo — per theme één statische laag die via
+            opacity crossfade't. Voorheen animeerden backgroundColor en de
+            gradient-string per frame → full-screen repaint, 1.8s lang bij
+            elke themawissel. Nu één raster per wissel, GPU-blend ertussen. */}
+      <ThemeCrossfadeStack
+        themeKey={themeKey}
         className="absolute inset-0"
-        initial={false}
-        animate={{
-          background: `radial-gradient(ellipse at 50% 52%, ${palette.background} 0%, ${palette.background}00 60%)`,
+        renderLayer={(layerTheme) => {
+          const layerPalette = getPalette(layerTheme);
+          return (
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundColor: layerPalette.backgroundDeep,
+                background: `radial-gradient(ellipse at 50% 52%, ${layerPalette.background} 0%, ${layerPalette.background}00 60%) ${layerPalette.backgroundDeep}`,
+              }}
+            />
+          );
         }}
-        transition={COLOR_TRANSITION}
       />
 
       {/* 2. Statisch ster-veld (geen animatie, zit ingebakken in SVG). */}
@@ -1151,7 +1276,7 @@ export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
       />
 
       {/* 3. Galactic disk — grote tilted ring-structuur als hoofd-feature */}
-      <GalacticDisk palette={palette} diskSize={diskSize} diskDots={diskDots} />
+      <GalacticDisk themeKey={themeKey} palette={palette} diskSize={diskSize} diskDots={diskDots} />
 
       {/* 4. Pulserende kleine dots (achtergrond sterren) */}
       {pulses.map((p) => (
@@ -1214,7 +1339,7 @@ export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
 
       {/* 7. Cloud nebula strips — sliding top + bottom */}
       <CapsuleStrip
-        palette={palette}
+        themeKey={themeKey}
         clusters={topClusters}
         direction={-1}
         durationSec={ringCycleSec}
@@ -1226,7 +1351,7 @@ export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
         }}
       />
       <CapsuleStrip
-        palette={palette}
+        themeKey={themeKey}
         clusters={bottomClusters}
         direction={1}
         durationSec={ringCycleSec * 1.18}
@@ -1314,29 +1439,37 @@ export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
         </div>
       )}
 
-      {/* 10. Subtiele dot-grid texture overlay */}
-      <motion.div
+      {/* 10. Subtiele dot-grid texture overlay. `cream` is in elk palette
+            identiek (#FFF2B8), dus dit is gewoon een statische laag — de oude
+            backgroundImage-animatie kon per definitie niets veranderen. */}
+      <div
         className="kurzgesagt-dot-field"
-        initial={false}
-        animate={{
+        style={{
           backgroundImage: `radial-gradient(${palette.cream} 1.2px, transparent 1.2px)`,
         }}
-        transition={COLOR_TRANSITION}
       />
 
       {/* 11. Vignette die het oog naar centrum trekt.
             Voorheen mix-blend-mode: multiply — een full-screen, niet-geïsoleerde
             composite-pass elke frame. Op de toch al donkere scène geeft een
             gewone (source-over) radial-gradient met voor-gedonkerde rgba's
-            vrijwel hetzelfde beeld, zónder de blend-pass. */}
-      <motion.div
+            vrijwel hetzelfde beeld, zónder de blend-pass.
+            Per theme statisch; kleurwissel via opacity-crossfade. */}
+      <ThemeCrossfadeStack
+        themeKey={themeKey}
         className="absolute inset-0"
-        initial={false}
-        animate={{
-          background: `radial-gradient(ellipse at center, transparent 42%, ${mixColor(palette.backgroundDeep, { r: 0, g: 0, b: 0 }, 0.12, 0.9)} 94%, rgba(0, 0, 0, 0.96) 100%)`,
+        renderLayer={(layerTheme) => {
+          const layerPalette = getPalette(layerTheme);
+          return (
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `radial-gradient(ellipse at center, transparent 42%, ${mixColor(layerPalette.backgroundDeep, { r: 0, g: 0, b: 0 }, 0.12, 0.9)} 94%, rgba(0, 0, 0, 0.96) 100%)`,
+              }}
+            />
+          );
         }}
-        transition={COLOR_TRANSITION}
       />
-    </motion.div>
+    </div>
   );
 });

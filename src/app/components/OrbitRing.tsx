@@ -1239,6 +1239,10 @@ export const OrbitRing = memo(function OrbitRing({
   // Actieve device-pixel-ratio waarmee de canvassen zijn opgezet. Gebruikt om
   // label-sprites op de juiste resolutie te rasteren (crispe tekst).
   const pixelRatioRef = useRef(1);
+  // Cache voor het center-mask gradient. Hangt alleen af van center/maskRadius
+  // (verandert enkel bij resize/layout), maar werd elke frame opnieuw
+  // aangemaakt + met 3 color stops gevuld.
+  const maskGradientRef = useRef<{ key: string; gradient: CanvasGradient } | null>(null);
   const nodesRef = useRef(nodes);
   const onSelectNodeRef = useRef(onSelectNode);
   const onFocusChangeRef = useRef(onFocusChange);
@@ -1604,17 +1608,24 @@ export const OrbitRing = memo(function OrbitRing({
       // Mask alleen de achterlaag: rear planets verdwijnen achter de core,
       // front planets blijven zichtbaar wanneer ze voorlangs passeren.
       const maskRadius = visualStyle === 'kurzgesagt' ? centerMaskRadius * 1.22 : centerMaskRadius;
-      const maskGradient = backContext.createRadialGradient(
-        centerX,
-        centerY,
-        maskRadius * 0.84,
-        centerX,
-        centerY,
-        maskRadius * 1.08,
-      );
-      maskGradient.addColorStop(0, 'rgba(0,0,0,1)');
-      maskGradient.addColorStop(0.84, 'rgba(0,0,0,1)');
-      maskGradient.addColorStop(1, 'rgba(0,0,0,0)');
+      const maskKey = `${centerX}|${centerY}|${maskRadius}`;
+      let maskGradient = maskGradientRef.current?.key === maskKey
+        ? maskGradientRef.current.gradient
+        : null;
+      if (!maskGradient) {
+        maskGradient = backContext.createRadialGradient(
+          centerX,
+          centerY,
+          maskRadius * 0.84,
+          centerX,
+          centerY,
+          maskRadius * 1.08,
+        );
+        maskGradient.addColorStop(0, 'rgba(0,0,0,1)');
+        maskGradient.addColorStop(0.84, 'rgba(0,0,0,1)');
+        maskGradient.addColorStop(1, 'rgba(0,0,0,0)');
+        maskGradientRef.current = { key: maskKey, gradient: maskGradient };
+      }
       backContext.beginPath();
       backContext.arc(centerX, centerY, maskRadius * 1.08, 0, TAU);
       backContext.fillStyle = maskGradient;

@@ -325,19 +325,24 @@
   backface-visibility: hidden;
 }
 
+/* Pulserende disk-dot — HTML div (géén SVG-child meer): CSS transform/opacity
+   animaties op HTML-elementen draaien op de compositor-thread, terwijl
+   dezelfde animatie op een SVG-circle elke frame een re-raster van de
+   volledige disk-SVG forceerde. Kleur crossfade't mee met het thema. */
 .kurzgesagt-disk-dot {
+  border-radius: 50%;
   animation-name: kurzgesagt-disk-dot-pulse;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
-  transition: fill 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: background-color 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity;
 }
 
 /* Statische disk-dot: geen pulse-animatie (perf), vaste mid-opacity ≈ het
    gemiddelde van de pulse-keyframe zodat het sterrenveld even dicht oogt.
-   Kleur crossfade't nog mee met het thema. */
+   Kleurwissel loopt via de ThemeCrossfadeStack van de disk-SVG. */
 .kurzgesagt-disk-dot--static {
   opacity: 0.62;
-  transition: fill 1.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .kurzgesagt-twinkle-star {
