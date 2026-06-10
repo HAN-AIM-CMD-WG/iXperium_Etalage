@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { memo, useCallback, useId, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ease } from '../motion/easing';
 
 interface KurzgesagtBackdropProps {
@@ -966,6 +966,12 @@ function PulseDot({
 
 /**
  * Vallende ster met trail. Random spawn via `repeatDelay`.
+ *
+ * Draait op de Web Animations API i.p.v. een framer-motion JS-loop: de
+ * transform/opacity keyframes lopen daarmee op de compositor-thread, zodat de
+ * main thread in rust geen animatiewerk meer doet. De "wachttijd" tussen twee
+ * spawns (repeatDelay) is in de keyframes ingebakken als dood segment.
+ * Kleuren crossfaden via CSS-transitions op de trail/head (zie theme.css).
  */
 function ShootingStar({
   delay,
@@ -986,8 +992,43 @@ function ShootingStar({
   color: string;
   angle: number;
 }) {
+  const elementRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const element = elementRef.current;
+    if (!element || typeof element.animate !== 'function') return;
+
+    const cycle = duration + repeatDelay;
+    const active = duration / cycle;
+    const startTransform = `translate(-15vw, ${startY}vh) rotate(${angle}deg)`;
+    const endTransform = `translate(115vw, ${endY}vh) rotate(${angle}deg)`;
+
+    // Zelfde traject + timing als de oude framer-versie:
+    // x -15vw→115vw en y start→end lineair over `duration`,
+    // opacity [0,1,1,0] op times [0,0.1,0.85,1], daarna repeatDelay stilte.
+    const animation = element.animate(
+      [
+        { offset: 0, transform: startTransform, opacity: 0 },
+        { offset: active * 0.1, opacity: 1 },
+        { offset: active * 0.85, opacity: 1 },
+        { offset: active, transform: endTransform, opacity: 0 },
+        { offset: 1, transform: endTransform, opacity: 0 },
+      ],
+      {
+        duration: cycle * 1000,
+        delay: delay * 1000,
+        iterations: Infinity,
+        easing: 'linear',
+        fill: 'backwards',
+      },
+    );
+
+    return () => animation.cancel();
+  }, [delay, repeatDelay, startY, endY, duration, angle]);
+
   return (
-    <motion.div
+    <div
+      ref={elementRef}
       style={{
         position: 'absolute',
         left: 0,
@@ -997,41 +1038,24 @@ function ShootingStar({
         transformOrigin: 'right center',
         willChange: 'transform, opacity',
         pointerEvents: 'none',
-      }}
-      initial={{
-        x: '-15vw',
-        y: `${startY}vh`,
+        // Onzichtbaar tot de WAAPI-animatie start (en als fallback wanneer
+        // element.animate niet beschikbaar is).
         opacity: 0,
-        rotate: angle,
-      }}
-      animate={{
-        x: ['-15vw', '115vw'],
-        y: [`${startY}vh`, `${endY}vh`],
-        opacity: [0, 1, 1, 0],
-        rotate: angle,
-      }}
-      transition={{
-        duration,
-        times: [0, 0.1, 0.85, 1],
-        ease: ease.linear,
-        repeat: Infinity,
-        repeatDelay,
-        delay,
+        transform: `translate(-15vw, ${startY}vh) rotate(${angle}deg)`,
       }}
     >
-      <motion.div
+      <div
+        className="kurzgesagt-shooting-star__tail"
         style={{
           width: '100%',
           height: '100%',
           borderRadius: 2,
-        }}
-        animate={{
           background: `linear-gradient(90deg, ${color}00 0%, ${color}40 55%, ${color}ff 92%, #FFFFFFff 100%)`,
           boxShadow: `0 0 6px ${color}`,
         }}
-        transition={COLOR_TRANSITION}
       />
-      <motion.div
+      <div
+        className="kurzgesagt-shooting-star__head"
         style={{
           position: 'absolute',
           right: -3,
@@ -1040,11 +1064,10 @@ function ShootingStar({
           height: 8,
           borderRadius: '50%',
           background: '#FFFFFF',
+          boxShadow: `0 0 12px ${color}, 0 0 24px ${color}`,
         }}
-        animate={{ boxShadow: `0 0 12px ${color}, 0 0 24px ${color}` }}
-        transition={COLOR_TRANSITION}
       />
-    </motion.div>
+    </div>
   );
 }
 

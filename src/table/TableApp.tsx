@@ -100,10 +100,11 @@ const CentralPlanet = memo(function CentralPlanet({ accentColor = '#8B5CF6' }: {
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.8, delay: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
     >
-      <motion.div
+      <div
         className="relative flex h-[21rem] w-[21rem] items-center justify-center"
-        animate={{ y: [0, -5, 0] }}
-        transition={{ duration: 7, repeat: Infinity, ease: 'linear' }}
+        // CSS-animatie i.p.v. framer JS-loop: zelfde float (orbit-float =
+        // translate3d 0/-5px/0), maar volledig op de compositor-thread.
+        style={{ animation: 'orbit-float 7s linear infinite', willChange: 'transform' }}
       >
         <div
           className="central-planet-label ixperium-core-mark relative z-10 w-[min(17.5rem,38vw)] text-center"
@@ -126,7 +127,7 @@ const CentralPlanet = memo(function CentralPlanet({ accentColor = '#8B5CF6' }: {
             draggable={false}
           />
         </div>
-      </motion.div>
+      </div>
     </motion.div>
   );
 });

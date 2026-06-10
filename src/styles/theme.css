@@ -374,6 +374,18 @@
   will-change: transform, opacity;
 }
 
+/* Vallende-ster trail/head: beweging loopt via WAAPI op de compositor;
+   alleen de kleur crossfade't hier mee met het thema. */
+.kurzgesagt-shooting-star__tail {
+  transition:
+    background 1.8s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kurzgesagt-shooting-star__head {
+  transition: box-shadow 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .kurzgesagt-nebula-strip__track {
   animation: kurzgesagt-nebula-strip-slide var(--strip-duration) linear infinite;
   will-change: transform;

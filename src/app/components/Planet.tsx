@@ -67,10 +67,11 @@ export const Planet = memo(function Planet({
         transition={{ duration: 0.8, ease: ease.flashy }}
         style={{ zIndex: 60 }}
       >
-        <motion.div
+        <div
           className="relative flex h-[21rem] w-[21rem] items-center justify-center"
-          animate={{ y: [0, -5, 0] }}
-          transition={{ duration: 6.5, repeat: Infinity, ease: ease.linear }}
+          // CSS-animatie i.p.v. framer JS-loop: zelfde float (orbit-float =
+          // translate3d 0/-5px/0), maar volledig op de compositor-thread.
+          style={{ animation: 'orbit-float 6.5s linear infinite', willChange: 'transform' }}
         >
           <div
             className="central-planet-label relative z-10 w-[min(18.5rem,42vw)] text-center"
@@ -183,7 +184,7 @@ export const Planet = memo(function Planet({
               </motion.p>
             )}
           </div>
-        </motion.div>
+        </div>
       </motion.div>
     );
   }

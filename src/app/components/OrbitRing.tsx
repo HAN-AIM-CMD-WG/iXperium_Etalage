@@ -1020,65 +1020,24 @@ function drawAtmospherePatch(
   context.restore();
 }
 
-function drawVectorPlanet(
+/**
+ * Tekent het geanimeerde planeet-oppervlak (body, atmosfeer-patches, kraters,
+ * inner light). Verwacht een context die naar het planeet-centrum is
+ * getransleerd en op de bol is geclipt. Wordt gebruikt door de surface-sprite
+ * renderer (12Hz, offscreen) en als directe fallback.
+ */
+function paintVectorPlanetSurface(
   context: CanvasRenderingContext2D,
-  planet: RenderedPlanet,
-  layer: OrbitLayer,
-  visibility: number,
+  radius: number,
+  color: string,
   seed: number,
   animTime: number,
 ) {
-  if (visibility <= 0.01) return;
-
-  const isFront = layer === 'front';
-  const layerOpacity = (isFront ? planet.opacity : planet.opacity * 0.54) * visibility;
-  const outlineWidth = clamp(planet.radius * 0.075, 3, 7);
-  const color = planet.node.color;
-  const radius = planet.radius;
   const rotation = ((seed % 360) / 360) * TAU + Math.sin(animTime * 0.16 + seed * 0.01) * 0.05;
   const surfacePhase = animTime * (0.11 + (seed % 7) * 0.008) + seed * 0.003;
-  const atmospherePulse = 0.5 + 0.5 * Math.sin(animTime * 0.7 + seed * 0.02);
-
   const vectorSpriteSet = getVectorPlanetSprites(color);
   const surfaceColors = getVectorSurfaceColors(color);
 
-  context.save();
-  context.globalAlpha = layerOpacity;
-  context.globalCompositeOperation = 'source-over';
-  context.shadowBlur = 0;
-
-  if (vectorSpriteSet) {
-    // Pre-gerasterde halo-sprite i.p.v. elke frame een radial-gradient vullen.
-    // De subtiele "ademing" (gradient-rand 1.32→1.38) reproduceren we door de
-    // blit-grootte mee te schalen; back-laag via lagere globalAlpha.
-    const pulseScale = (1.32 + atmospherePulse * 0.06) / VECTOR_HALO_OUTER;
-    const haloDraw = (VECTOR_HALO_SIZE * radius / VECTOR_SPRITE_RENDER_RADIUS) * pulseScale;
-    if (!isFront) context.globalAlpha = layerOpacity * VECTOR_HALO_BACK_ALPHA;
-    context.drawImage(vectorSpriteSet.halo, planet.x - haloDraw / 2, planet.y - haloDraw / 2, haloDraw, haloDraw);
-    context.globalAlpha = layerOpacity;
-  } else {
-    const halo = context.createRadialGradient(
-      planet.x,
-      planet.y,
-      radius * 0.86,
-      planet.x,
-      planet.y,
-      radius * (1.32 + atmospherePulse * 0.06),
-    );
-    halo.addColorStop(0, rgba(color, isFront ? 0.34 : 0.16));
-    halo.addColorStop(0.44, rgba(color, isFront ? 0.16 : 0.08));
-    halo.addColorStop(1, rgba(color, 0));
-    context.beginPath();
-    context.arc(planet.x, planet.y, radius * 1.38, 0, TAU);
-    context.fillStyle = halo;
-    context.fill();
-  }
-
-  context.save();
-  context.beginPath();
-  context.arc(planet.x, planet.y, radius, 0, TAU);
-  context.clip();
-  context.translate(planet.x, planet.y);
   if (vectorSpriteSet) {
     context.drawImage(vectorSpriteSet.body, -radius, -radius, radius * 2, radius * 2);
   } else {
@@ -1157,8 +1116,153 @@ function drawVectorPlanet(
     context.fillStyle = innerLight;
     context.fillRect(-radius, -radius, radius * 2, radius * 2);
   }
+}
 
-  context.restore();
+// ============================================================
+// ANIMATED SURFACE SPRITE CACHE (per planeet)
+//
+// Het oppervlak (body + 3 atmosfeer-patches + 7 kraters + inner light)
+// beweegt héél traag (frequenties ~0.1–0.7 rad/s, amplitudes van enkele px).
+// Per frame opnieuw tekenen kostte per planeet per laag een clip + ~10
+// ellipse-fills op het grote canvas (~120 fills + 12 clips per frame).
+//
+// Nu rendert elke planeet zijn oppervlak naar een eigen klein offscreen
+// canvas dat op SURFACE_UPDATE_HZ ververst (per planeet gestaggerd via seed
+// zodat niet alles in dezelfde frame valt). De 60fps-paden blitten alleen
+// nog: per laag 1 drawImage + 2 dunne arc-strokes (outline + rim).
+// Bij 12Hz is de stap-grootte van de drift ≪ 1px — visueel continu.
+// ============================================================
+const SURFACE_SPRITE_RADIUS = 80;
+const SURFACE_SPRITE_PAD = 8;
+const SURFACE_SPRITE_SIZE = (SURFACE_SPRITE_RADIUS + SURFACE_SPRITE_PAD) * 2;
+const SURFACE_UPDATE_HZ = 12;
+const SURFACE_SPRITE_CACHE_LIMIT = 64;
+
+type SurfaceSprite = {
+  canvas: SpriteCanvas;
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+  bucket: number;
+  color: string;
+};
+const SURFACE_SPRITE_CACHE = new Map<string, SurfaceSprite>();
+
+function getVectorSurfaceSprite(
+  nodeId: string,
+  color: string,
+  seed: number,
+  animTime: number,
+): SurfaceSprite | null {
+  // Stagger per planeet zodat sprite-refreshes over frames gespreid worden.
+  const bucket = Math.floor(animTime * SURFACE_UPDATE_HZ + (seed % 16) / 16);
+
+  let sprite = SURFACE_SPRITE_CACHE.get(nodeId);
+  if (!sprite) {
+    const canvas = createSpriteCanvas(SURFACE_SPRITE_SIZE);
+    const ctx = canvas?.getContext('2d') as
+      | CanvasRenderingContext2D
+      | OffscreenCanvasRenderingContext2D
+      | null;
+    if (!canvas || !ctx) return null;
+    sprite = { canvas, ctx, bucket: Number.NaN, color };
+    SURFACE_SPRITE_CACHE.set(nodeId, sprite);
+    if (SURFACE_SPRITE_CACHE.size > SURFACE_SPRITE_CACHE_LIMIT) {
+      const oldestKey = SURFACE_SPRITE_CACHE.keys().next().value;
+      if (oldestKey) SURFACE_SPRITE_CACHE.delete(oldestKey);
+    }
+  }
+
+  if (sprite.bucket !== bucket || sprite.color !== color) {
+    const ctx = sprite.ctx as unknown as CanvasRenderingContext2D;
+    const center = SURFACE_SPRITE_SIZE / 2;
+    ctx.clearRect(0, 0, SURFACE_SPRITE_SIZE, SURFACE_SPRITE_SIZE);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(center, center, SURFACE_SPRITE_RADIUS, 0, TAU);
+    ctx.clip();
+    ctx.translate(center, center);
+    paintVectorPlanetSurface(ctx, SURFACE_SPRITE_RADIUS, color, seed, animTime);
+    ctx.restore();
+    sprite.bucket = bucket;
+    sprite.color = color;
+  }
+
+  return sprite;
+}
+
+function drawVectorPlanet(
+  context: CanvasRenderingContext2D,
+  planet: RenderedPlanet,
+  layer: OrbitLayer,
+  visibility: number,
+  seed: number,
+  animTime: number,
+) {
+  if (visibility <= 0.01) return;
+
+  const isFront = layer === 'front';
+  const layerOpacity = (isFront ? planet.opacity : planet.opacity * 0.54) * visibility;
+  const outlineWidth = clamp(planet.radius * 0.075, 3, 7);
+  const color = planet.node.color;
+  const radius = planet.radius;
+  const surfacePhase = animTime * (0.11 + (seed % 7) * 0.008) + seed * 0.003;
+  const atmospherePulse = 0.5 + 0.5 * Math.sin(animTime * 0.7 + seed * 0.02);
+
+  const vectorSpriteSet = getVectorPlanetSprites(color);
+
+  context.save();
+  context.globalAlpha = layerOpacity;
+  context.globalCompositeOperation = 'source-over';
+  context.shadowBlur = 0;
+
+  if (vectorSpriteSet) {
+    // Pre-gerasterde halo-sprite i.p.v. elke frame een radial-gradient vullen.
+    // De subtiele "ademing" (gradient-rand 1.32→1.38) reproduceren we door de
+    // blit-grootte mee te schalen; back-laag via lagere globalAlpha.
+    const pulseScale = (1.32 + atmospherePulse * 0.06) / VECTOR_HALO_OUTER;
+    const haloDraw = (VECTOR_HALO_SIZE * radius / VECTOR_SPRITE_RENDER_RADIUS) * pulseScale;
+    if (!isFront) context.globalAlpha = layerOpacity * VECTOR_HALO_BACK_ALPHA;
+    context.drawImage(vectorSpriteSet.halo, planet.x - haloDraw / 2, planet.y - haloDraw / 2, haloDraw, haloDraw);
+    context.globalAlpha = layerOpacity;
+  } else {
+    const halo = context.createRadialGradient(
+      planet.x,
+      planet.y,
+      radius * 0.86,
+      planet.x,
+      planet.y,
+      radius * (1.32 + atmospherePulse * 0.06),
+    );
+    halo.addColorStop(0, rgba(color, isFront ? 0.34 : 0.16));
+    halo.addColorStop(0.44, rgba(color, isFront ? 0.16 : 0.08));
+    halo.addColorStop(1, rgba(color, 0));
+    context.beginPath();
+    context.arc(planet.x, planet.y, radius * 1.38, 0, TAU);
+    context.fillStyle = halo;
+    context.fill();
+  }
+
+  // Oppervlak: blit van de 12Hz surface-sprite (front en back delen dezelfde
+  // sprite binnen één frame — tweede aanroep is een cache-hit).
+  const surfaceSprite = getVectorSurfaceSprite(planet.node.id, color, seed, animTime);
+  if (surfaceSprite) {
+    const drawSize = SURFACE_SPRITE_SIZE * (radius / SURFACE_SPRITE_RADIUS);
+    context.drawImage(
+      surfaceSprite.canvas,
+      planet.x - drawSize / 2,
+      planet.y - drawSize / 2,
+      drawSize,
+      drawSize,
+    );
+  } else {
+    // Fallback (sprite-canvas niet beschikbaar): direct tekenen zoals voorheen.
+    context.save();
+    context.beginPath();
+    context.arc(planet.x, planet.y, radius, 0, TAU);
+    context.clip();
+    context.translate(planet.x, planet.y);
+    paintVectorPlanetSurface(context, radius, color, seed, animTime);
+    context.restore();
+  }
 
   context.beginPath();
   context.arc(planet.x, planet.y, radius, 0, TAU);
