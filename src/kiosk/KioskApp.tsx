@@ -77,24 +77,33 @@ const KioskNebulaBackdrop = memo(function KioskNebulaBackdrop({
     '--nebula-accent-warm': mixHex(accentColor, '#FFD400', 0.48),
   }) as CSSProperties & Record<string, string>, [accentColor]);
 
+  const layerProps = {
+    viewBox: '0 0 1600 1000',
+    preserveAspectRatio: 'xMidYMid slice' as const,
+  };
+
+  // Perf-opzet: elke geanimeerde groep zit in een eigen gestapelde SVG en de
+  // drift-animatie staat op dat SVG-élement (HTML-niveau → compositor-thread).
+  // Voorheen stonden de animaties op <g>-children binnen één grote SVG, wat
+  // elke frame een re-raster van de volledige full-screen SVG afdwong. De
+  // pulserende sterren zijn om dezelfde reden losse divs.
   return (
     <div className="kiosk-nebula-backdrop" style={style} aria-hidden="true">
-      <svg
-        className="kiosk-nebula-backdrop__svg"
-        viewBox="0 0 1600 1000"
-        preserveAspectRatio="xMidYMid slice"
-      >
-        <rect width="1600" height="1000" fill="#050817" />
-        <path
-          className="kiosk-nebula-backdrop__void"
-          d="M-80 162 C205 36 357 174 566 117 C771 61 1036 -86 1680 94 L1680 0 L-80 0 Z"
-        />
-        <path
-          className="kiosk-nebula-backdrop__void kiosk-nebula-backdrop__void--lower"
-          d="M-120 914 C179 816 350 910 588 841 C817 775 1057 702 1720 812 L1720 1040 L-120 1040 Z"
-        />
+      <div className="kiosk-nebula-backdrop__camera">
+        {/* Statische basis: diepe ruimte + donkere voids */}
+        <svg className="kiosk-nebula-layer" {...layerProps}>
+          <rect width="1600" height="1000" fill="#050817" />
+          <path
+            className="kiosk-nebula-backdrop__void"
+            d="M-80 162 C205 36 357 174 566 117 C771 61 1036 -86 1680 94 L1680 0 L-80 0 Z"
+          />
+          <path
+            className="kiosk-nebula-backdrop__void kiosk-nebula-backdrop__void--lower"
+            d="M-120 914 C179 816 350 910 588 841 C817 775 1057 702 1720 812 L1720 1040 L-120 1040 Z"
+          />
+        </svg>
 
-        <g className="kiosk-nebula-flow kiosk-nebula-flow--primary">
+        <svg className="kiosk-nebula-layer kiosk-nebula-layer--primary" {...layerProps}>
           <path
             fill="var(--nebula-accent)"
             opacity="0.34"
@@ -122,9 +131,9 @@ const KioskNebulaBackdrop = memo(function KioskNebulaBackdrop({
             className="kiosk-nebula-filament kiosk-nebula-filament--warm"
             d="M137 709 C314 628 428 651 593 568 C779 474 956 490 1093 583 C1212 664 1330 676 1492 619"
           />
-        </g>
+        </svg>
 
-        <g className="kiosk-nebula-flow kiosk-nebula-flow--secondary">
+        <svg className="kiosk-nebula-layer kiosk-nebula-layer--secondary" {...layerProps}>
           <path
             fill="#6E4BFF"
             opacity="0.3"
@@ -139,9 +148,9 @@ const KioskNebulaBackdrop = memo(function KioskNebulaBackdrop({
             className="kiosk-nebula-dust-lane kiosk-nebula-dust-lane--cool"
             d="M56 281 C178 237 288 258 392 325 C514 404 625 485 780 481 C947 475 1059 355 1196 308 C1324 264 1457 285 1600 355 L1600 421 C1450 345 1335 343 1214 397 C1062 465 948 577 761 571 C594 565 474 467 357 397 C248 333 150 324 56 353 Z"
           />
-        </g>
+        </svg>
 
-        <g className="kiosk-nebula-pillars">
+        <svg className="kiosk-nebula-layer kiosk-nebula-layer--pillars" {...layerProps}>
           <path
             fill="#111532"
             opacity="0.66"
@@ -162,27 +171,33 @@ const KioskNebulaBackdrop = memo(function KioskNebulaBackdrop({
             opacity="0.18"
             d="M341 157 C354 230 315 277 303 337 C286 419 350 478 340 580 C333 645 310 693 289 685 C265 676 297 606 268 519 C247 455 209 415 219 332 C230 246 304 219 331 158 C334 151 339 151 341 157 Z"
           />
-        </g>
+        </svg>
 
-        <g className="kiosk-nebula-starfield">
-          {NEBULA_STARS.map((star) => (
-            <circle
-              key={star.id}
-              className="kiosk-nebula-star"
-              cx={star.x}
-              cy={star.y}
-              r={star.size}
-              style={{ '--star-delay': `${star.delay}s` } as CSSProperties & Record<string, string>}
-            />
-          ))}
-        </g>
-
-        <g className="kiosk-nebula-sparkles">
+        <svg className="kiosk-nebula-layer kiosk-nebula-layer--sparkles" {...layerProps}>
           <path d="M212 790 l10 29 l29 10 l-29 10 l-10 29 l-10 -29 l-29 -10 l29 -10 Z" />
           <path d="M1370 172 l8 23 l23 8 l-23 8 l-8 23 l-8 -23 l-23 -8 l23 -8 Z" />
           <path d="M1270 843 l12 34 l34 12 l-34 12 l-12 34 l-12 -34 l-34 -12 l34 -12 Z" />
-        </g>
-      </svg>
+        </svg>
+
+        {/* Sterren als composited divs (pulse = transform/opacity op HTML) */}
+        <div className="kiosk-nebula-stars">
+          {NEBULA_STARS.map((star) => (
+            <div
+              key={star.id}
+              className="kiosk-nebula-star"
+              style={{
+                left: `${(star.x / 1600) * 100}%`,
+                top: `${(star.y / 1000) * 100}%`,
+                width: star.size * 2,
+                height: star.size * 2,
+                marginLeft: -star.size,
+                marginTop: -star.size,
+                animationDelay: `${star.delay}s`,
+              }}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 });
@@ -332,6 +347,13 @@ const KioskBrand = memo(function KioskBrand() {
   );
 });
 
+/**
+ * Mediakaart — Kurzgesagt "viewport"-kaart in de huisstijl van de applicatie:
+ * dikke inkt-blauwe rand, offset-schaduw en een cream caption-balk ÓNDER het
+ * beeld. De foto zelf is volledig schoon: geen filter, geen gradient-overlay,
+ * geen blur-rand — gewoon de afbeelding zoals hij is. Zonder foto toont de
+ * viewport het decoratieve drijvende kleurenveld.
+ */
 const KioskDetailPlanet = memo(function KioskDetailPlanet({
   node,
   mode,
@@ -343,6 +365,7 @@ const KioskDetailPlanet = memo(function KioskDetailPlanet({
 }) {
   const style = useMemo(() => ({
     '--kiosk-accent': accentColor,
+    '--kiosk-accent-ink': mixHex(accentColor, VECTOR_INK, 0.46),
     '--kiosk-accent-dark': mixHex(accentColor, VECTOR_INK, 0.52),
     '--kiosk-accent-deep': mixHex(accentColor, '#2a0c54', 0.4),
     '--kiosk-accent-warm': mixHex(accentColor, '#FFD400', 0.42),
@@ -359,66 +382,56 @@ const KioskDetailPlanet = memo(function KioskDetailPlanet({
 
   return (
     <motion.div
-      className={`kiosk-detail-planet${image ? ' kiosk-detail-planet--has-image' : ''}${themeClass}`}
+      className={`kiosk-detail-planet${themeClass}`}
       style={style}
       transformTemplate={(_, generated) => `translate(-50%, -50%) ${generated}`}
-      initial={{
-        opacity: 0,
-        y: 42,
-        scale: 0.94,
-        rotate: -0.35,
-        filter: 'blur(16px) saturate(0.9)',
-        backdropFilter: 'blur(0px) saturate(1)',
-      }}
+      initial={{ opacity: 0, y: 42, scale: 0.94, rotate: -0.35 }}
       animate={{
         opacity: [0, 0.88, 1],
         y: [42, -10, 0],
         scale: [0.94, 1.018, 1],
         rotate: [-0.35, 0.16, 0],
-        filter: ['blur(16px) saturate(0.9)', 'blur(2px) saturate(1.04)', 'blur(0px) saturate(1)'],
-        backdropFilter: image ? 'blur(0px) saturate(1)' : 'blur(18px) saturate(1.25)',
       }}
       exit={{
         y: exitY,
         scale: [1, 1.014, 0.88],
         rotate: [0, -0.18, -2.4],
         opacity: [1, 1, 0],
-        filter: ['blur(0px) saturate(1)', 'blur(0px) saturate(1.04)', 'blur(16px) saturate(0.86)'],
         transition: MEDIA_EXIT_TRANSITION,
       }}
       transition={enterDelay
         ? { ...MEDIA_ENTER_TRANSITION, delay: enterDelay }
         : MEDIA_ENTER_TRANSITION}
     >
-      {image ? (
-        <>
+      <div className="kiosk-detail-planet__viewport">
+        {image ? (
           <img
             className="kiosk-detail-planet__image"
             src={image}
             alt={node?.title ?? 'iXperium Smart Industry'}
             loading="eager"
-          />
-          <img
-            className="kiosk-detail-planet__edge-image"
-            src={image}
-            alt=""
-            aria-hidden="true"
             draggable={false}
           />
-        </>
-      ) : null}
-      <span className="kiosk-detail-planet__field kiosk-detail-planet__field--one" />
-      <span className="kiosk-detail-planet__field kiosk-detail-planet__field--two" />
-      <span className="kiosk-detail-planet__field kiosk-detail-planet__field--three" />
-      <span className="kiosk-detail-planet__crater kiosk-detail-planet__crater--one" />
-      <span className="kiosk-detail-planet__crater kiosk-detail-planet__crater--two" />
-      <span className="kiosk-detail-planet__crater kiosk-detail-planet__crater--three" />
-      <span className="kiosk-detail-planet__shine" />
+        ) : (
+          <>
+            <span className="kiosk-detail-planet__field kiosk-detail-planet__field--one" />
+            <span className="kiosk-detail-planet__field kiosk-detail-planet__field--two" />
+            <span className="kiosk-detail-planet__field kiosk-detail-planet__field--three" />
+            <span className="kiosk-detail-planet__crater kiosk-detail-planet__crater--one" />
+            <span className="kiosk-detail-planet__crater kiosk-detail-planet__crater--two" />
+            <span className="kiosk-detail-planet__crater kiosk-detail-planet__crater--three" />
+            <span className="kiosk-detail-planet__shine" />
+          </>
+        )}
+      </div>
 
-      <div className="kiosk-detail-planet__label">
-        <p>{getModeLabel(mode)}</p>
-        <h2>{title}</h2>
-        <span>{subtitle}</span>
+      <div className="kiosk-detail-planet__caption">
+        <span className="kiosk-detail-planet__caption-bar" />
+        <div className="kiosk-detail-planet__caption-text">
+          <p>{getModeLabel(mode)}</p>
+          <h2>{title}</h2>
+        </div>
+        <span className="kiosk-detail-planet__badge">{subtitle}</span>
       </div>
     </motion.div>
   );
@@ -448,26 +461,20 @@ const KioskInfoPanel = memo(function KioskInfoPanel({
     <motion.div
       className="kiosk-detail-panel"
       style={{
-        '--panel-accent': accentColor,
+        // --panel-accent: gedonkerde variant voor tekst/dots op het cream
+        // paneel (lichte routekleuren zoals geel blijven zo leesbaar);
+        // --panel-badge: de pure routekleur voor het badge-vlak.
+        '--panel-accent': mixHex(accentColor, VECTOR_INK, 0.38),
+        '--panel-badge': accentColor,
         '--panel-glow': rgbaHex(accentColor, 0.34),
       } as CSSProperties & Record<string, string>}
-      initial={{
-        opacity: 0,
-        x: 34,
-        y: 46,
-        scale: 0.955,
-        rotate: 0.28,
-        filter: 'blur(18px)',
-        backdropFilter: 'blur(0px) saturate(1)',
-      }}
+      initial={{ opacity: 0, x: 34, y: 46, scale: 0.955, rotate: 0.28 }}
       animate={{
         opacity: [0, 0.78, 1],
         x: [34, -8, 0],
         y: [46, -12, 0],
         scale: [0.955, 1.018, 1],
         rotate: [0.28, -0.12, 0],
-        filter: ['blur(18px)', 'blur(3px)', 'blur(0px)'],
-        backdropFilter: 'blur(30px) saturate(1.48)',
       }}
       exit={{
         y: exitY,
@@ -475,7 +482,6 @@ const KioskInfoPanel = memo(function KioskInfoPanel({
         scale: [1, 1.012, 0.9],
         rotate: [0, 0.16, 1.8],
         opacity: [1, 1, 0],
-        filter: ['blur(0px)', 'blur(0px)', 'blur(16px)'],
         transition: INFO_EXIT_TRANSITION,
       }}
       transition={{ ...INFO_ENTER_TRANSITION, delay: enterDelay }}
@@ -663,11 +669,14 @@ export function KioskApp() {
       <main className="kiosk-detail-main relative z-10 flex min-h-screen items-center px-[4.8vw] pb-12 pt-32">
         <motion.section
           className="kiosk-detail-layout"
-          initial={{ opacity: 0, y: 18, filter: 'blur(8px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.48, ease: DETAIL_ENTER_EASE }}
         >
-          <div className="kiosk-detail-planet-zone">
+          <div
+            className="kiosk-detail-planet-zone"
+            style={{ '--kiosk-orbit-glow': rgbaHex(accentColor, 0.3) } as CSSProperties & Record<string, string>}
+          >
             <AnimatePresence mode="wait">
               <KioskDetailPlanet
                 key={`planet-${viewKey}`}

@@ -402,69 +402,26 @@
   overflow: visible;
 }
 
-.kurzgesagt-cloud-nebula__shape {
-  transition:
-    fill 1.8s cubic-bezier(0.22, 1, 0.36, 1),
-    stroke 1.8s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 1.8s cubic-bezier(0.22, 1, 0.36, 1);
-  vector-effect: non-scaling-stroke;
-}
-
-.kurzgesagt-cloud-nebula__stop {
-  transition: stop-color 1.8s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
 .kurzgesagt-moon,
 .kurzgesagt-central-planet {
   position: absolute;
 }
 
+/* Mini-planeet wrapper: de visuals (outline, schaduw, ring, banden) zitten
+   volledig in de SVG; deze wrapper doet alleen positie + drift-animatie.
+   Kleurwissels lopen via ThemeCrossfadeStack. */
 .kurzgesagt-moon {
   width: clamp(7rem, 11vw, 12rem);
   aspect-ratio: 1;
-  overflow: hidden;
-  border-width: 6px;
-  border-style: solid;
-  border-radius: 999px;
-  /* box-shadow geeft de moon een subtiele gloed — kleur wordt per-theme
-     via inline style gezet op de parent (borderColor = palette.ink). */
-  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.35), 0 0 24px rgba(255, 255, 255, 0.08);
   animation: kurzgesagt-moon-drift var(--moon-duration) linear infinite;
-  transition:
-    background-color 1.8s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 1.8s cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }
 
-.kurzgesagt-moon span {
-  position: absolute;
-  display: block;
-  border-width: 4px;
-  border-style: solid;
-  border-color: inherit;
-  border-radius: 999px;
-  transition:
-    background-color 1.8s cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 1.8s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.kurzgesagt-moon span:first-child {
-  left: -8%;
-  top: 22%;
-  width: 58%;
-  height: 24%;
-}
-
-.kurzgesagt-moon span:last-child {
-  right: 13%;
-  bottom: 16%;
-  width: 30%;
-  height: 30%;
-}
-
 .kurzgesagt-moon--left {
-  left: clamp(1rem, 7vw, 8rem);
-  top: clamp(5rem, 13vh, 9rem);
+  /* Iets hoger dan voorheen zodat de ringplaneet boven het Routebord-panel
+     uitkomt in plaats van er bijna volledig achter te verdwijnen. */
+  left: clamp(1rem, 7.5vw, 9rem);
+  top: clamp(3.5rem, 7.5vh, 6.5rem);
 }
 
 .kurzgesagt-moon--right {
@@ -1006,7 +963,7 @@
 
 [data-visual-style='kurzgesagt'] .kiosk-card-title,
 [data-visual-style='kurzgesagt'] .kiosk-chip,
-[data-visual-style='kurzgesagt'] .kiosk-detail-planet__label h2,
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet__caption-text h2,
 [data-visual-style='kurzgesagt'] .kiosk-detail-panel__header h1,
 [data-visual-style='kurzgesagt'] .kiosk-detail-panel__columns h2,
 [data-visual-style='kurzgesagt'] .kiosk-signal-strip strong {
@@ -1015,7 +972,8 @@
 
 [data-visual-style='kurzgesagt'] .kiosk-route-card .kiosk-copy,
 [data-visual-style='kurzgesagt'] .kiosk-topic-row .kiosk-copy,
-[data-visual-style='kurzgesagt'] .kiosk-detail-planet__label span,
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet__caption-text p,
+[data-visual-style='kurzgesagt'] .kiosk-detail-planet__badge,
 [data-visual-style='kurzgesagt'] .kiosk-detail-panel__intro,
 [data-visual-style='kurzgesagt'] .kiosk-detail-panel__body,
 [data-visual-style='kurzgesagt'] .kiosk-detail-panel__columns li,
@@ -1167,16 +1125,23 @@
   transform: translateZ(0);
 }
 
-.kiosk-nebula-backdrop__svg {
+/* Camera-drift op een HTML-div (composited). De geanimeerde groepen zitten
+   elk in een eigen gestapelde SVG-laag; de drift-animaties staan op die
+   SVG-elementen zelf zodat álle nevel-beweging op de compositor draait en
+   er na de eerste raster geen repaint meer plaatsvindt. */
+.kiosk-nebula-backdrop__camera {
   position: absolute;
   inset: -7%;
-  width: 114%;
-  height: 114%;
   transform-origin: center;
   animation: kiosk-nebula-camera 42s ease-in-out infinite;
-  /* Eigen GPU-laag voor de camera-drift, voorkomt re-paint van de hele
-     backdrop bij elke frame van de camera-bewegings-keyframe. */
   will-change: transform;
+}
+
+.kiosk-nebula-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .kiosk-nebula-backdrop__void {
@@ -1188,18 +1153,25 @@
   opacity: 0.58;
 }
 
-.kiosk-nebula-flow {
-  transform-box: fill-box;
-  transform-origin: center;
+.kiosk-nebula-layer--primary {
   will-change: transform, opacity;
-}
-
-.kiosk-nebula-flow--primary {
   animation: kiosk-nebula-drift-primary 34s ease-in-out infinite;
 }
 
-.kiosk-nebula-flow--secondary {
+.kiosk-nebula-layer--secondary {
+  will-change: transform, opacity;
   animation: kiosk-nebula-drift-secondary 46s ease-in-out infinite;
+}
+
+.kiosk-nebula-layer--pillars {
+  will-change: transform;
+  animation: kiosk-nebula-pillar-drift 38s ease-in-out infinite;
+}
+
+.kiosk-nebula-layer--sparkles {
+  fill: rgba(255, 255, 255, 0.58);
+  will-change: transform, opacity;
+  animation: kiosk-nebula-sparkle-drift 24s ease-in-out infinite;
 }
 
 .kiosk-nebula-dust-lane {
@@ -1212,6 +1184,9 @@
   opacity: 0.62;
 }
 
+/* Statische "energielijnen" — de stroom-suggestie komt van de laag-drift +
+   camera-beweging. De oude stroke-dashoffset cycle dwong elke frame een
+   re-raster van de laag af. */
 .kiosk-nebula-filament {
   fill: none;
   stroke: rgba(255, 255, 255, 0.34);
@@ -1220,43 +1195,34 @@
   stroke-linejoin: round;
   stroke-dasharray: 42 22 8 18;
   opacity: 0.52;
-  animation: kiosk-nebula-filament-flow 18s linear infinite;
 }
 
 .kiosk-nebula-filament--warm {
   stroke: var(--nebula-accent-warm, #ffd400);
   stroke-width: 7;
   opacity: 0.34;
-  animation-duration: 22s;
 }
 
-.kiosk-nebula-pillars {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: kiosk-nebula-pillar-drift 38s ease-in-out infinite;
+.kiosk-nebula-stars {
+  position: absolute;
+  inset: 0;
 }
 
 .kiosk-nebula-star {
-  fill: #ffffff;
+  position: absolute;
+  border-radius: 50%;
+  background: #ffffff;
   opacity: 0.55;
-  transform-origin: center;
   animation: kiosk-nebula-star-pulse 5.6s ease-in-out infinite;
-  animation-delay: var(--star-delay, 0s);
+  will-change: transform, opacity;
 }
 
-.kiosk-nebula-star:nth-child(3n) {
-  fill: #70f0ff;
+.kiosk-nebula-stars .kiosk-nebula-star:nth-child(3n) {
+  background: #70f0ff;
 }
 
-.kiosk-nebula-star:nth-child(5n) {
-  fill: var(--nebula-accent-warm, #ffd400);
-}
-
-.kiosk-nebula-sparkles {
-  fill: rgba(255, 255, 255, 0.58);
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: kiosk-nebula-sparkle-drift 24s ease-in-out infinite;
+.kiosk-nebula-stars .kiosk-nebula-star:nth-child(5n) {
+  background: var(--nebula-accent-warm, #ffd400);
 }
 
 .kiosk-detail-layout {
@@ -1395,156 +1361,116 @@
 }
 
 /* ============================================================
-   MEDIA PLACEHOLDER - afgeronde rechthoek met dezelfde kaarttaal
-   als het tekstvak ernaast. Later kan hier een afbeelding onder
-   de label-laag worden geplaatst zonder de vorm opnieuw te wijzigen.
+   MEDIAKAART — Kurzgesagt "viewport"-kaart in de huisstijl:
+   dikke inkt-rand + offset-schaduw (zoals .content-card en het cream
+   infopaneel), foto volledig schoon in de viewport, caption-balk in
+   cream ónder het beeld. Geen backdrop-filter, geen overlays.
    ============================================================ */
 .kiosk-detail-planet {
   position: absolute;
   left: 50%;
   top: 50%;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
   width: clamp(38rem, 52vw, 62rem);
   max-width: 100%;
   aspect-ratio: 16 / 10;
-  isolation: isolate;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 2.25rem;
-  background:
-    radial-gradient(circle at 0% 0%, var(--kiosk-accent-glow, rgba(70, 180, 105, 0.34)), transparent 38%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
-    rgba(7, 16, 22, 0.64);
+  border: 6px solid #07185f;
+  border-radius: 1.35rem;
+  background: #0a1030;
   box-shadow:
-    0 38px 120px rgba(0, 0, 0, 0.42),
-    0 0 56px var(--kiosk-accent-glow, rgba(70, 180, 105, 0.18)),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  filter: none;
-  backdrop-filter: blur(18px) saturate(1.25);
-  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+    14px 14px 0 rgba(7, 24, 95, 0.6),
+    0 34px 90px rgba(2, 6, 24, 0.45);
   transform: translate(-50%, -50%);
 }
 
-.kiosk-detail-planet::before {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
+.kiosk-detail-planet__viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(5, 8, 23, 0.06) 0%, rgba(5, 8, 23, 0.42) 100%),
-    radial-gradient(ellipse at 50% 45%, transparent 0%, rgba(5, 8, 23, 0.24) 78%);
-  content: '';
+    radial-gradient(ellipse at 30% 24%, rgba(91, 224, 255, 0.10) 0%, transparent 52%),
+    #0a1030;
 }
 
-.kiosk-detail-planet::after {
-  position: absolute;
-  inset: 1rem;
-  z-index: 2;
-  pointer-events: none;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 1.65rem;
-  content: '';
-}
-
-.kiosk-detail-planet__image,
-.kiosk-detail-planet__edge-image {
+/* De foto zoals hij is: geen filter, geen kleurlaag, geen blur-rand. */
+.kiosk-detail-planet__image {
   position: absolute;
   inset: 0;
-  z-index: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scale(1.035);
-  filter: saturate(1.08) contrast(1.04);
   transition: opacity 0.45s ease-out;
-  will-change: opacity, transform;
-}
-
-.kiosk-detail-planet__edge-image {
-  --media-edge-magnify: clamp(1.35rem, 2vw, 2.2rem);
-  z-index: 3;
-  opacity: 0.58;
-  transform: scale(1.115);
-  filter: saturate(1.22) contrast(1.1) brightness(1.08);
-  mix-blend-mode: screen;
-  pointer-events: none;
-  -webkit-mask:
-    linear-gradient(
-      to right,
-      #000 0 var(--media-edge-magnify),
-      transparent var(--media-edge-magnify) calc(100% - var(--media-edge-magnify)),
-      #000 calc(100% - var(--media-edge-magnify)) 100%
-    ),
-    linear-gradient(
-      to bottom,
-      #000 0 var(--media-edge-magnify),
-      transparent var(--media-edge-magnify) calc(100% - var(--media-edge-magnify)),
-      #000 calc(100% - var(--media-edge-magnify)) 100%
-    );
-  mask:
-    linear-gradient(
-      to right,
-      #000 0 var(--media-edge-magnify),
-      transparent var(--media-edge-magnify) calc(100% - var(--media-edge-magnify)),
-      #000 calc(100% - var(--media-edge-magnify)) 100%
-    ),
-    linear-gradient(
-      to bottom,
-      #000 0 var(--media-edge-magnify),
-      transparent var(--media-edge-magnify) calc(100% - var(--media-edge-magnify)),
-      #000 calc(100% - var(--media-edge-magnify)) 100%
-    );
-  -webkit-mask-composite: source-over;
-  mask-composite: add;
 }
 
 .kiosk-detail-planet--theme-ai .kiosk-detail-planet__image {
   object-position: 50% 38%;
-  transform: scale(1.035) translateY(4.5%);
 }
 
-.kiosk-detail-planet--theme-ai .kiosk-detail-planet__edge-image {
-  object-position: 50% 38%;
-  transform: scale(1.115) translateY(4.5%);
+/* Caption-balk onder het beeld — cream met inkt-tekst, accent-bar links en
+   een mode-badge in de routekleur rechts. */
+.kiosk-detail-planet__caption {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 1.1rem;
+  border-top: 6px solid #07185f;
+  background: #fff2b8;
+  padding: 1rem 1.25rem;
+  color: #07185f;
 }
 
-.kiosk-detail-planet--has-image {
-  background: #05080f;
-  box-shadow:
-    0 42px 128px rgba(0, 0, 0, 0.48),
-    0 0 68px var(--kiosk-accent-glow, rgba(70, 180, 105, 0.22)),
-    inset 0 1px 0 rgba(255, 255, 255, 0.13);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+.kiosk-detail-planet__caption-bar {
+  width: 0.62rem;
+  align-self: stretch;
+  flex-shrink: 0;
+  border: 3px solid #07185f;
+  border-radius: 999px;
+  background: var(--kiosk-accent, #46b469);
 }
 
-.kiosk-detail-planet--has-image::before {
-  display: block;
-  background:
-    linear-gradient(180deg, rgba(5, 8, 23, 0.08) 0%, transparent 34%),
-    linear-gradient(0deg, rgba(5, 8, 23, 0.74) 0%, rgba(5, 8, 23, 0.30) 32%, transparent 62%),
-    radial-gradient(ellipse at 16% 18%, rgba(255, 255, 255, 0.14) 0%, transparent 34%);
+.kiosk-detail-planet__caption-text {
+  min-width: 0;
+  flex: 1;
 }
 
-.kiosk-detail-planet--has-image::after {
-  display: block;
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow:
-    inset 0 0 26px rgba(255, 255, 255, 0.12),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    inset 0 -56px 90px rgba(5, 8, 23, 0.22),
-    0 0 0 1px rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(3px) saturate(1.42) contrast(1.06);
-  -webkit-backdrop-filter: blur(3px) saturate(1.42) contrast(1.06);
+.kiosk-detail-planet__caption-text p {
+  color: var(--kiosk-accent-ink, #07185f);
+  font-size: clamp(0.66rem, 0.78vw, 0.8rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.22em;
 }
 
-/* Bij aanwezige foto: alle decoratieve drift-lagen verbergen.
-   mix-blend-mode: screen × 7 lagen + per-frame drift = veel compositor
-   re-blends. Foto is visueel hero genoeg. */
-.kiosk-detail-planet--has-image .kiosk-detail-planet__field,
-.kiosk-detail-planet--has-image .kiosk-detail-planet__crater,
-.kiosk-detail-planet--has-image .kiosk-detail-planet__shine {
-  display: none;
+.kiosk-detail-planet__caption-text h2 {
+  margin-top: 0.45rem;
+  overflow: hidden;
+  color: #07185f;
+  font-family: var(--ixp-font-heading, inherit);
+  font-size: clamp(1.55rem, 2.4vw, 2.4rem);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kiosk-detail-planet__badge {
+  flex-shrink: 0;
+  border: 4px solid #07185f;
+  border-radius: 999px;
+  background: var(--kiosk-accent, #46b469);
+  padding: 0.62rem 1.05rem;
+  color: #07185f;
+  font-size: clamp(0.7rem, 0.82vw, 0.84rem);
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 4px 0 #07185f;
 }
 
 .kiosk-detail-planet__field,
@@ -1640,129 +1566,17 @@
   transform: none;
 }
 
-.kiosk-detail-planet__label {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  z-index: 4;
-  display: flex;
-  width: min(82%, 28rem);
-  transform: translate(-50%, -50%);
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.kiosk-detail-planet--has-image .kiosk-detail-planet__label {
-  left: 1.55rem;
-  right: auto;
-  bottom: 1.45rem;
-  top: auto;
-  width: min(72%, 28rem);
-  transform: none;
-  align-items: flex-start;
-  text-align: left;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 1.25rem;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
-    rgba(5, 8, 23, 0.28);
-  padding: 1rem 1.1rem 1.05rem;
-  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.30);
-  backdrop-filter: blur(0px) saturate(1);
-  -webkit-backdrop-filter: blur(0px) saturate(1);
-  animation: kiosk-media-caption-frost-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
-}
-
-/* Eyebrow: kleine caps, accent kleur, subtiele tracking */
-.kiosk-detail-planet__label p {
-  color: var(--kiosk-accent-light, #fff2b8);
-  font-size: clamp(0.66rem, 0.78vw, 0.78rem);
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: 0.28em;
-  text-transform: none;
-  opacity: 0.9;
-  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.42);
-}
-
-/* Hoofdtitel: refined, geen 3D offset shadow meer.
-   Crisp wit met een zachte accent-glow voor leesbaarheid op het glas. */
-.kiosk-detail-planet__label h2 {
-  margin-top: 0.6rem;
-  color: #ffffff;
-  font-size: clamp(2rem, 3.7vw, 3.65rem);
-  font-weight: 800;
-  line-height: 0.96;
-  letter-spacing: 0;
-  text-shadow:
-    0 2px 16px rgba(0, 0, 0, 0.42),
-    0 0 28px var(--kiosk-accent-glow, rgba(70, 180, 105, 0.32));
-  overflow-wrap: anywhere;
-}
-
-.kiosk-detail-planet--has-image .kiosk-detail-planet__label h2 {
-  max-width: 24rem;
-  margin-top: 0.42rem;
-  font-size: clamp(1.65rem, 2.2vw, 2.55rem);
-  text-shadow:
-    0 2px 18px rgba(0, 0, 0, 0.58),
-    0 0 22px var(--kiosk-accent-glow, rgba(70, 180, 105, 0.26));
-}
-
-/* Subtitel: rustig, lager contrast, geen kapitalen */
-.kiosk-detail-planet__label span {
-  display: block;
-  max-width: 16rem;
-  margin-top: 0.95rem;
-  padding-top: 0.65rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.72);
-  font-size: clamp(0.78rem, 0.94vw, 0.96rem);
-  font-weight: 500;
-  line-height: 1.3;
-  letter-spacing: 0.02em;
-  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.32);
-}
-
-.kiosk-detail-planet--has-image .kiosk-detail-planet__label span {
-  max-width: 18rem;
-  margin-top: 0.6rem;
-  padding-top: 0.55rem;
-}
-
+/* Infopaneel — geen glas/backdrop-filter meer; het visuele ontwerp komt van
+   de kurzgesagt cream-variant verderop ([data-visual-style='kurzgesagt']). */
 .kiosk-detail-panel {
   position: relative;
   z-index: 4;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.19);
   border-radius: 2rem;
-  background:
-    radial-gradient(circle at 0% 0%, var(--panel-glow, rgba(102, 42, 136, 0.24)), transparent 38%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.04)),
-    rgba(48, 12, 82, 0.34);
+  background: rgba(20, 14, 50, 0.92);
   padding: clamp(1.45rem, 2.1vw, 2.35rem);
   color: #ffffff;
-  box-shadow:
-    0 30px 96px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.11);
-  backdrop-filter: blur(30px) saturate(1.48);
-  -webkit-backdrop-filter: blur(30px) saturate(1.48);
-}
-
-.kiosk-detail-panel::before {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.19), rgba(255, 255, 255, 0.045)),
-    radial-gradient(circle at 8% 0%, var(--panel-glow, rgba(102, 42, 136, 0.26)), transparent 44%);
-  opacity: 0;
-  backdrop-filter: blur(0px) saturate(1);
-  -webkit-backdrop-filter: blur(0px) saturate(1);
-  content: '';
-  animation: kiosk-info-frost-fade 1.18s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+  box-shadow: 0 30px 96px rgba(0, 0, 0, 0.34);
 }
 
 .kiosk-detail-panel > * {
@@ -1967,58 +1781,6 @@
   color: #07185f;
 }
 
-[data-visual-style='kurzgesagt'] .kiosk-detail-planet {
-  width: clamp(38rem, 52vw, 62rem);
-  max-width: 100%;
-  aspect-ratio: 16 / 10;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 2.25rem;
-  filter: none;
-  background:
-    radial-gradient(circle at 0% 0%, var(--kiosk-accent-glow, rgba(70, 180, 105, 0.34)), transparent 38%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.055)),
-    rgba(7, 16, 22, 0.34);
-  box-shadow:
-    0 28px 92px rgba(0, 0, 0, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-[data-visual-style='kurzgesagt'] .kiosk-detail-planet:not(.kiosk-detail-planet--has-image) .kiosk-detail-planet__field,
-[data-visual-style='kurzgesagt'] .kiosk-detail-planet:not(.kiosk-detail-planet--has-image) .kiosk-detail-planet__crater,
-[data-visual-style='kurzgesagt'] .kiosk-detail-planet:not(.kiosk-detail-planet--has-image) .kiosk-detail-planet__shine {
-  display: block;
-}
-
-[data-visual-style='kurzgesagt'] .kiosk-detail-planet__label p,
-[data-visual-style='kurzgesagt'] .kiosk-detail-planet__label span {
-  color: var(--kiosk-accent-light, #fff2b8);
-  text-shadow:
-    0 1px 0 #07185f,
-    3px 3px 0 rgba(7, 24, 95, 0.78);
-}
-
-[data-visual-style='kurzgesagt'] .kiosk-detail-planet__label h2 {
-  -webkit-text-stroke: 1.25px var(--kiosk-accent-light, #fff2b8);
-  text-shadow:
-    0 0 14px var(--kiosk-accent-glow, rgba(255, 242, 184, 0.55)),
-    5px 6px 0 #07185f;
-}
-
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-planet--has-image .kiosk-detail-planet__label p,
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-planet--has-image .kiosk-detail-planet__label span {
-  color: rgba(255, 255, 255, 0.78);
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.46);
-}
-
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-planet--has-image .kiosk-detail-planet__label h2 {
-  -webkit-text-stroke: 0;
-  color: #ffffff;
-  text-shadow:
-    0 2px 18px rgba(0, 0, 0, 0.58),
-    0 0 22px var(--kiosk-accent-glow, rgba(70, 180, 105, 0.26));
-}
-
 [data-visual-style='kurzgesagt'] .kiosk-detail-panel {
   border: 6px solid #07185f;
   border-radius: 0.85rem;
@@ -2041,7 +1803,7 @@
 
 [data-visual-style='kurzgesagt'] .kiosk-detail-panel__header > span {
   border: 4px solid #07185f;
-  background: var(--panel-accent, #ff3344);
+  background: var(--panel-badge, var(--panel-accent, #ff3344));
   color: #07185f;
   box-shadow: 0 5px 0 #07185f;
 }
@@ -2066,78 +1828,10 @@
   background: rgba(255, 255, 255, 0.38);
 }
 
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .visual-style-toggle,
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .connection-pill,
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel,
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-orbit-chip,
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-signal-strip div,
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__header > span {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.055)),
-    rgba(7, 16, 22, 0.34);
-  color: #ffffff;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(30px) saturate(1.48);
-  -webkit-backdrop-filter: blur(30px) saturate(1.48);
-}
-
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .visual-style-toggle:hover {
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08)),
-    rgba(7, 16, 22, 0.42);
-}
-
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel {
-  border-radius: 1.65rem;
-  background:
-    radial-gradient(circle at 0% 0%, var(--panel-glow, rgba(70, 180, 105, 0.22)), transparent 38%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.045)),
-    rgba(18, 8, 34, 0.34);
-}
-
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-orbit-chip {
-  border-radius: 1rem;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.055)),
-    rgba(5, 8, 23, 0.44);
-}
-
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-orbit-chip span {
-  border: 2px solid rgba(255, 255, 255, 0.55);
-  box-shadow: 0 0 18px var(--chip-shadow, rgba(70, 180, 105, 0.5));
-}
-
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-orbit-chip p,
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__header h1,
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__intro,
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__body,
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__columns li,
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-signal-strip strong,
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-signal-strip span {
-  color: #ffffff;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.36);
-}
-
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__body,
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-signal-strip span {
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__header p,
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__columns h2 {
-  color: var(--panel-accent, #46b469);
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.42);
-}
-
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-detail-panel__header > span {
-  color: #ffffff;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.38);
-}
-
-.kiosk-detail-shell[data-visual-style='kurzgesagt'] .kiosk-signal-strip div {
-  border-radius: 1rem;
-}
+/* (De vroegere full-glass override voor het kiosk-paneel en de pills is
+   verwijderd: backdrop-filter blur(30px) over een continu animerende
+   achtergrond was de grootste GPU-kost van de kiosk. De cream kurzgesagt
+   panelen hierboven zijn nu het definitieve ontwerp.) */
 
 @keyframes kiosk-detail-planet-float {
   0%,
@@ -2223,15 +1917,6 @@
   }
 }
 
-@keyframes kiosk-nebula-filament-flow {
-  from {
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dashoffset: -180;
-  }
-}
-
 @keyframes kiosk-nebula-star-pulse {
   0%,
   100% {
@@ -2253,41 +1938,6 @@
   50% {
     transform: translate3d(-18px, 12px, 0);
     opacity: 0.92;
-  }
-}
-
-@keyframes kiosk-media-caption-frost-in {
-  0% {
-    background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
-      rgba(5, 8, 23, 0.08);
-    backdrop-filter: blur(0px) saturate(1);
-    -webkit-backdrop-filter: blur(0px) saturate(1);
-  }
-  100% {
-    background:
-      linear-gradient(135deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045)),
-      rgba(5, 8, 23, 0.28);
-    backdrop-filter: blur(14px) saturate(1.25);
-    -webkit-backdrop-filter: blur(14px) saturate(1.25);
-  }
-}
-
-@keyframes kiosk-info-frost-fade {
-  0% {
-    opacity: 0;
-    backdrop-filter: blur(0px) saturate(1);
-    -webkit-backdrop-filter: blur(0px) saturate(1);
-  }
-  58% {
-    opacity: 0.72;
-    backdrop-filter: blur(14px) saturate(1.24);
-    -webkit-backdrop-filter: blur(14px) saturate(1.24);
-  }
-  100% {
-    opacity: 1;
-    backdrop-filter: blur(30px) saturate(1.48);
-    -webkit-backdrop-filter: blur(30px) saturate(1.48);
   }
 }
 
@@ -2352,14 +2002,17 @@
     aspect-ratio: 4 / 3;
   }
 
-  .kiosk-detail-planet--has-image .kiosk-detail-planet__label {
-    left: 1.15rem;
-    bottom: 1.05rem;
-    width: calc(100% - 2.3rem);
+  .kiosk-detail-planet__caption {
+    gap: 0.8rem;
+    padding: 0.8rem 0.95rem;
   }
 
-  .kiosk-detail-planet--has-image .kiosk-detail-planet__label h2 {
-    font-size: clamp(1.45rem, 7vw, 2.1rem);
+  .kiosk-detail-planet__caption-text h2 {
+    font-size: clamp(1.3rem, 5.4vw, 1.8rem);
+  }
+
+  .kiosk-detail-planet__badge {
+    display: none;
   }
 
   .kiosk-topic-orbit {
