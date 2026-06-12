@@ -213,6 +213,20 @@ function getPalette(theme: string) {
 const COLOR_TRANSITION = { duration: 1.8, ease: ease.soft } as const;
 const ORBIT_RING_ROTATION_DEG = -20;
 
+/**
+ * Ontwerp van de centrale planeet op de tafel:
+ *  - 'energy'  : plasma/circuit-ontwerp — donkere bol, lichte circuit-ringen,
+ *                witte rim, stralenkrans en energie-jets boven/onder.
+ *  - 'classic' : het vorige ontwerp (kleurvelden + kraters + ring).
+ * Terug naar het oude ontwerp: zet hieronder 'classic', of open de pagina
+ * zonder rebuild met ?centralPlanet=classic achter de URL.
+ */
+const CENTRAL_PLANET_DESIGN: 'energy' | 'classic' =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('centralPlanet') === 'classic'
+    ? 'classic'
+    : 'energy';
+
 /* ---------------- Theme crossfade stack ---------------- */
 
 interface CrossfadeLayers {
@@ -515,143 +529,87 @@ function sparklePath(x: number, y: number, s: number) {
   return `M ${x} ${y - s} L ${x + w} ${y - w} L ${x + s} ${y} L ${x + w} ${y + w} L ${x} ${y + s} L ${x - w} ${y + w} L ${x - s} ${y} L ${x - w} ${y - w} Z`;
 }
 
-/**
- * Organische blob-vorm: punten rond een ellips met seeded radius-jitter,
- * verbonden via een gesloten Catmull-Rom spline (omgezet naar cubic beziers).
- * Deterministisch per seed → zelfde vorm elke render.
- */
-function nebulaBlobPath(
-  seed: number,
-  cx: number,
-  cy: number,
-  rx: number,
-  ry: number,
-  pointCount = 10,
-  jitter = 0.34,
-): string {
-  const rand = seededRandom(seed);
-  const points: Array<[number, number]> = [];
-  for (let i = 0; i < pointCount; i += 1) {
-    const angle = (i / pointCount) * Math.PI * 2;
-    const radial = 1 - jitter * 0.5 + rand() * jitter;
-    points.push([
-      cx + Math.cos(angle) * rx * radial,
-      cy + Math.sin(angle) * ry * radial,
-    ]);
-  }
+const NEBULA_VIEW_W = 360;
+const NEBULA_VIEW_H = 220;
 
-  let d = `M ${points[0][0].toFixed(1)} ${points[0][1].toFixed(1)}`;
-  for (let i = 0; i < pointCount; i += 1) {
-    const p0 = points[(i - 1 + pointCount) % pointCount];
-    const p1 = points[i];
-    const p2 = points[(i + 1) % pointCount];
-    const p3 = points[(i + 2) % pointCount];
-    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
-    const c1y = p1[1] + (p2[1] - p0[1]) / 6;
-    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
-    const c2y = p2[1] - (p3[1] - p1[1]) / 6;
-    d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
-  }
-  return `${d} Z`;
-}
-
-interface NebulaSpec {
-  /** Paden voor de drie gaslagen, van buiten naar binnen. */
-  outerPath: string;
-  midPath: string;
-  corePath: string;
-  heartPath: string;
-  /** Sterretjes die ín het gas zweven. */
-  stars: Array<{ x: number; y: number; r: number }>;
+interface NebulaMassSpec {
+  /** Capsule-vlakken per gaslaag (0 = diepste laag … 3 = bijna-witte kern). */
+  capsules: Array<{ x: number; y: number; w: number; h: number; rot: number; layer: number }>;
+  /** Sterrenstof-spikkels door het gas heen. */
+  dots: Array<{ x: number; y: number; r: number; tone: number }>;
+  /** Donut-ring sterren aan de rand van de massa. */
+  rings: Array<{ x: number; y: number; r: number; w: number }>;
   sparkle: { x: number; y: number; s: number };
 }
 
-function buildNebulaSpec(
-  seed: number,
-  outer: [number, number, number, number],
-  mid: [number, number, number, number],
-  core: [number, number, number, number],
-  stars: Array<{ x: number; y: number; r: number }>,
-  sparkle: { x: number; y: number; s: number },
-): NebulaSpec {
-  const [ox, oy, orx, ory] = outer;
-  const [mx, my, mrx, mry] = mid;
-  const [kx, ky, krx, kry] = core;
+/**
+ * Bouwt één nebula-massa: een diagonale stroom van overlappende, afgeronde
+ * capsules (diep → accent → licht → kern) met sterrenstof-spikkels erover-
+ * heen — de gas-look uit de Kurzgesagt-referentie, in plaats van de oude
+ * cartoon-wolkjes. Deterministisch per seed; `flowDeg` is de stroomrichting
+ * van de hele massa.
+ */
+function buildNebulaMass(seed: number, flowDeg: number): NebulaMassSpec {
+  const rand = seededRandom(seed);
+  const cx = NEBULA_VIEW_W / 2;
+  const cy = NEBULA_VIEW_H / 2;
+  const round = (value: number) => Math.round(value * 10) / 10;
+
+  // Per laag: [aantal, wMin, wMax, hMin, hMax, spreidingX, spreidingY]
+  const layerConfigs: Array<[number, number, number, number, number, number, number]> = [
+    [5, 130, 205, 36, 54, 92, 40],
+    [4, 95, 150, 26, 40, 72, 32],
+    [3, 64, 108, 19, 29, 52, 24],
+    [2, 38, 64, 12, 19, 32, 15],
+  ];
+
+  const capsules = layerConfigs.flatMap(([count, wMin, wMax, hMin, hMax, sx, sy], layer) =>
+    Array.from({ length: count }, () => ({
+      x: round(cx + (rand() * 2 - 1) * sx),
+      y: round(cy + (rand() * 2 - 1) * sy),
+      w: round(wMin + rand() * (wMax - wMin)),
+      h: round(hMin + rand() * (hMax - hMin)),
+      rot: round(flowDeg + (rand() * 2 - 1) * 9),
+      layer,
+    })),
+  );
+
+  // Spikkels clusteren rond de kern (machtsverdeling trekt ze naar binnen).
+  const dots = Array.from({ length: 34 }, () => {
+    const angle = rand() * Math.PI * 2;
+    const dist = Math.pow(rand(), 0.62);
+    return {
+      x: round(cx + Math.cos(angle) * dist * 152),
+      y: round(cy + Math.sin(angle) * dist * 82),
+      r: round(0.7 + rand() * 1.3),
+      tone: Math.floor(rand() * 3),
+    };
+  });
+
+  const rings = Array.from({ length: 2 }, (_, i) => ({
+    x: round(cx + (i === 0 ? -1 : 1) * (118 + rand() * 42)),
+    y: round(cy + (rand() * 2 - 1) * 62),
+    r: round(4.5 + rand() * 3),
+    w: round(1.6 + rand() * 0.8),
+  }));
+
   return {
-    outerPath: nebulaBlobPath(seed, ox, oy, orx, ory, 11, 0.38),
-    midPath: nebulaBlobPath(seed + 17, mx, my, mrx, mry, 9, 0.34),
-    corePath: nebulaBlobPath(seed + 41, kx, ky, krx, kry, 8, 0.3),
-    heartPath: nebulaBlobPath(seed + 73, kx + krx * 0.12, ky - kry * 0.15, krx * 0.42, kry * 0.42, 7, 0.26),
-    stars,
-    sparkle,
+    capsules,
+    dots,
+    rings,
+    sparkle: { x: round(cx + (rand() * 2 - 1) * 150), y: round(cy + (rand() * 2 - 1) * 78), s: round(5 + rand() * 2) },
   };
 }
 
-/**
- * Vier nebula-varianten in een 320×180 viewBox: gelaagde gaswolken (diepe
- * buitenlaag → accent-middenlaag → lichte kern → bijna-witte "heart") met
- * sterretjes in het gas. Geen outline — nebula's zijn gas, geen objecten;
- * de Kurzgesagt-look komt van de vlakke, crisp gelaagde tinten.
- */
-const NEBULA_VARIANTS: NebulaSpec[] = [
-  // Variant A — breed, licht hellend.
-  buildNebulaSpec(
-    101,
-    [160, 92, 142, 58],
-    [148, 88, 98, 42],
-    [176, 82, 54, 26],
-    [
-      { x: 86, y: 78, r: 2.4 },
-      { x: 124, y: 112, r: 1.7 },
-      { x: 206, y: 64, r: 2.1 },
-      { x: 238, y: 102, r: 1.5 },
-    ],
-    { x: 284, y: 52, s: 6 },
-  ),
-  // Variant B — compacter en ronder.
-  buildNebulaSpec(
-    211,
-    [156, 94, 118, 66],
-    [168, 90, 84, 48],
-    [148, 84, 48, 30],
-    [
-      { x: 100, y: 70, r: 2.2 },
-      { x: 196, y: 120, r: 1.8 },
-      { x: 214, y: 70, r: 1.5 },
-    ],
-    { x: 56, y: 44, s: 5 },
-  ),
-  // Variant C — lange sliert.
-  buildNebulaSpec(
-    307,
-    [160, 96, 150, 48],
-    [140, 92, 104, 36],
-    [188, 90, 60, 24],
-    [
-      { x: 70, y: 92, r: 1.9 },
-      { x: 142, y: 70, r: 2.3 },
-      { x: 232, y: 110, r: 1.6 },
-      { x: 268, y: 78, r: 1.9 },
-    ],
-    { x: 30, y: 130, s: 5 },
-  ),
-  // Variant D — gekanteld, kern rechtsboven.
-  buildNebulaSpec(
-    419,
-    [158, 90, 132, 62],
-    [172, 84, 92, 44],
-    [190, 74, 50, 26],
-    [
-      { x: 96, y: 110, r: 2.2 },
-      { x: 142, y: 60, r: 1.6 },
-      { x: 236, y: 96, r: 2 },
-    ],
-    { x: 44, y: 60, s: 6 },
-  ),
+/** Drie massa's — één per zichtbaar cluster, elk met eigen stroomrichting. */
+const NEBULA_MASSES: NebulaMassSpec[] = [
+  buildNebulaMass(901, -14),
+  buildNebulaMass(1207, 10),
+  buildNebulaMass(1511, -20),
 ];
 
 /**
- * Rendert één nebula als statische SVG. Kleurwissels lopen via de
+ * Rendert één nebula-massa als statische SVG. Kleurwissels lopen via de
  * ThemeCrossfadeStack van het cluster (zie CapsuleStrip), dus binnen één
  * laag verandert hier nooit iets — geen per-frame raster, geen knippers.
  */
@@ -670,13 +628,16 @@ function NebulaCloud({
   rotate?: number;
   opacity?: number;
 }) {
-  const spec = NEBULA_VARIANTS[variant % NEBULA_VARIANTS.length];
-  const height = (size / 320) * 180;
+  const spec = NEBULA_MASSES[variant % NEBULA_MASSES.length];
+  const height = (size / NEBULA_VIEW_W) * NEBULA_VIEW_H;
+  const layerFills = [palette.capsuleBase, palette.capsuleAccent, palette.capsuleHighlight, palette.capsuleCore];
+  const layerOpacities = [0.4, 0.45, 0.52, 0.66];
+  const dotFills = [palette.starWhite, palette.capsuleCore, palette.capsuleHighlight];
 
   return (
     <svg
       className="kurzgesagt-cloud-nebula"
-      viewBox="0 0 320 180"
+      viewBox={`0 0 ${NEBULA_VIEW_W} ${NEBULA_VIEW_H}`}
       width={size}
       height={height}
       style={{
@@ -686,15 +647,29 @@ function NebulaCloud({
       }}
       aria-hidden
     >
-      {/* Gaslagen: diep → accent → licht → heart. */}
-      <path d={spec.outerPath} fill={palette.capsuleBase} opacity="0.5" />
-      <path d={spec.midPath} fill={palette.capsuleAccent} opacity="0.55" />
-      <path d={spec.corePath} fill={palette.capsuleHighlight} opacity="0.7" />
-      <path d={spec.heartPath} fill={palette.capsuleCore} opacity="0.85" />
+      {/* Gaslagen: zachte capsule-stroken, diep → kern. */}
+      {spec.capsules.map((capsule, idx) => (
+        <rect
+          key={`c-${idx}`}
+          x={capsule.x - capsule.w / 2}
+          y={capsule.y - capsule.h / 2}
+          width={capsule.w}
+          height={capsule.h}
+          rx={capsule.h / 2}
+          transform={`rotate(${capsule.rot} ${capsule.x} ${capsule.y})`}
+          fill={layerFills[capsule.layer]}
+          opacity={layerOpacities[capsule.layer]}
+        />
+      ))}
 
-      {/* Sterretjes in het gas + één sparkle ernaast. */}
-      {spec.stars.map((star, idx) => (
-        <circle key={idx} cx={star.x} cy={star.y} r={star.r} fill={palette.starWhite} opacity="0.85" />
+      {/* Sterrenstof-spikkels over het gas. */}
+      {spec.dots.map((dot, idx) => (
+        <circle key={`d-${idx}`} cx={dot.x} cy={dot.y} r={dot.r} fill={dotFills[dot.tone]} opacity="0.8" />
+      ))}
+
+      {/* Donut-ring sterren + één sparkle aan de rand. */}
+      {spec.rings.map((ring, idx) => (
+        <circle key={`r-${idx}`} cx={ring.x} cy={ring.y} r={ring.r} fill="none" stroke={palette.ringAccent} strokeWidth={ring.w} opacity="0.85" />
       ))}
       <path d={sparklePath(spec.sparkle.x, spec.sparkle.y, spec.sparkle.s)} fill={palette.capsuleCore} opacity="0.9" />
     </svg>
@@ -788,7 +763,7 @@ function CapsuleStrip({
                   style={{
                     position: 'relative',
                     width: cluster.size,
-                    height: (cluster.size / 320) * 180,
+                    height: (cluster.size / NEBULA_VIEW_W) * NEBULA_VIEW_H,
                   }}
                   renderLayer={(layerTheme) => (
                     <NebulaCloud
@@ -1201,6 +1176,173 @@ function mixColor(hex: string, target: { r: number; g: number; b: number }, mix:
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+/* ---------------- Central planet — 'energy' ontwerp ---------------- */
+
+// ViewBox-geometrie: bol met r=100 in het midden van 440×440; de lagen
+// (220% van de planeet-wrapper) mappen de bol exact op de wrapper-cirkel.
+const ENERGY_VIEW = 440;
+const ENERGY_C = ENERGY_VIEW / 2;
+const ENERGY_R = 100;
+
+/** Stralenkrans: 12 driehoekige lichtbundels rond de bol (3 extra lang). */
+const ENERGY_RAYS = Array.from({ length: 12 }, (_, i) => {
+  const angle = ((i * 30 + (i % 2 === 0 ? -8 : 7)) * Math.PI) / 180;
+  const bright = i % 3 === 0;
+  const len = bright ? 96 : i % 2 === 0 ? 56 : 74;
+  const half = bright ? 11 : 16;
+  const baseR = ENERGY_R + 6;
+  const tipR = ENERGY_R + 14 + len;
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+  const point = (x: number, y: number) => `${(ENERGY_C + x).toFixed(1)},${(ENERGY_C + y).toFixed(1)}`;
+  return {
+    points: [
+      point(cos * baseR - sin * half, sin * baseR + cos * half),
+      point(cos * tipR, sin * tipR),
+      point(cos * baseR + sin * half, sin * baseR - cos * half),
+    ].join(' '),
+    bright,
+  };
+});
+
+/** Energie-jets: afgeronde strepen die boven instromen en onder uitstromen. */
+const ENERGY_JET_STROKES = [
+  { x: 206, y1: 34, y2: 92, w: 9, bright: false },
+  { x: 222, y1: 16, y2: 106, w: 14, bright: true },
+  { x: 240, y1: 48, y2: 96, w: 7, bright: false },
+  { x: 204, y1: 346, y2: 402, w: 8, bright: false },
+  { x: 220, y1: 336, y2: 424, w: 13, bright: true },
+  { x: 236, y1: 350, y2: 392, w: 7, bright: false },
+];
+
+const ENERGY_JET_DOTS = [
+  { x: 214, y: 8, r: 4 },
+  { x: 232, y: 30, r: 2.5 },
+  { x: 212, y: 432, r: 3.5 },
+  { x: 230, y: 414, r: 2.5 },
+];
+
+/** Witte krul-golfjes vlak bij de rim, waar de jets de bol raken. */
+const ENERGY_JET_CURLS = [
+  'M 186 102 q 12 -10 24 0',
+  'M 238 112 q 10 8 20 -2',
+  'M 184 338 q 12 10 24 0',
+  'M 240 330 q 10 -8 20 2',
+];
+
+/**
+ * Centrale planeet in het 'energy' ontwerp. Vier gestapelde lagen:
+ *  1. rays   — stralenkrans + gloed + losse accenten (pulseert zachtjes);
+ *  2. jets   — energie-stromen boven/onder (deinen op en neer);
+ *  3. sphere — bol, atmosfeer-band en witte rim (statisch);
+ *  4. circuit — plasma/circuit-patroon, geclipt op de bol (draait héél traag).
+ * Alle beweging zit op de HTML-elementen (compositor); kleuren komen uit
+ * CSS-vars die met het thema mee-transitionen — alles kleurt dus mee.
+ */
+const EnergyCentralPlanet = memo(function EnergyCentralPlanet({
+  planetColor,
+  accentColor,
+}: {
+  planetColor: string;
+  accentColor: string;
+}) {
+  const paint = useMemo(() => ({
+    '--ep-body': mixColor(planetColor, { r: 16, g: 14, b: 76 }, 0.68),
+    '--ep-body-deep': mixColor(planetColor, { r: 7, g: 6, b: 40 }, 0.82),
+    '--ep-shell': mixColor(planetColor, { r: 205, g: 233, b: 255 }, 0.5),
+    '--ep-circuit': mixColor(planetColor, { r: 233, g: 247, b: 255 }, 0.62),
+    '--ep-circuit-deep': mixColor(planetColor, { r: 150, g: 196, b: 255 }, 0.34),
+    '--ep-jet': mixColor(planetColor, { r: 255, g: 255, b: 255 }, 0.74),
+    '--ep-glow': mixColor(planetColor, { r: 140, g: 205, b: 255 }, 0.42),
+    '--ep-accent': accentColor,
+  }) as React.CSSProperties & Record<string, string>, [planetColor, accentColor]);
+
+  const viewBox = `0 0 ${ENERGY_VIEW} ${ENERGY_VIEW}`;
+
+  return (
+    <div className="kg-energy-planet" style={paint} aria-hidden>
+      {/* 1. Stralenkrans + gloed + accenten buiten de bol */}
+      <svg className="kg-energy-planet__layer kg-energy-planet__rays" viewBox={viewBox}>
+        <circle cx={ENERGY_C} cy={ENERGY_C} r={152} fill="var(--ep-glow)" opacity="0.1" />
+        <circle cx={ENERGY_C} cy={ENERGY_C} r={124} fill="var(--ep-glow)" opacity="0.13" />
+        {ENERGY_RAYS.map((ray, idx) => (
+          <polygon
+            key={idx}
+            points={ray.points}
+            fill={ray.bright ? '#FFFFFF' : 'var(--ep-jet)'}
+            opacity={ray.bright ? 0.34 : 0.16}
+          />
+        ))}
+        {/* Losse accenten: driehoekjes, sparkles en stipjes rond de planeet */}
+        <polygon points="86,128 104,118 100,140" fill="var(--ep-accent)" opacity="0.9" />
+        <polygon points="352,296 370,290 362,310" fill="var(--ep-accent)" opacity="0.85" />
+        <path d={sparklePath(76, 96, 7)} fill="#FFFFFF" opacity="0.9" />
+        <path d={sparklePath(366, 322, 6)} fill="#FFFFFF" opacity="0.85" />
+        <circle cx={120} cy={322} r={2.5} fill="#FFFFFF" opacity="0.7" />
+        <circle cx={342} cy={94} r={3} fill="#FFFFFF" opacity="0.7" />
+        <circle cx={58} cy={222} r={2} fill="#FFFFFF" opacity="0.6" />
+      </svg>
+
+      {/* 2. Energie-jets boven en onder */}
+      <svg className="kg-energy-planet__layer kg-energy-planet__jets" viewBox={viewBox}>
+        {ENERGY_JET_STROKES.map((stroke, idx) => (
+          <line
+            key={idx}
+            x1={stroke.x}
+            y1={stroke.y1}
+            x2={stroke.x}
+            y2={stroke.y2}
+            stroke={stroke.bright ? '#FFFFFF' : 'var(--ep-jet)'}
+            strokeWidth={stroke.w}
+            strokeLinecap="round"
+            opacity={stroke.bright ? 0.92 : 0.72}
+          />
+        ))}
+        {ENERGY_JET_DOTS.map((dot, idx) => (
+          <circle key={`d-${idx}`} cx={dot.x} cy={dot.y} r={dot.r} fill="var(--ep-jet)" opacity="0.85" />
+        ))}
+        {ENERGY_JET_CURLS.map((d, idx) => (
+          <path key={`k-${idx}`} d={d} fill="none" stroke="#FFFFFF" strokeWidth={4} strokeLinecap="round" opacity="0.6" />
+        ))}
+      </svg>
+
+      {/* 3. Bol + atmosfeer-band + witte rim */}
+      <svg className="kg-energy-planet__layer" viewBox={viewBox}>
+        <circle cx={ENERGY_C} cy={ENERGY_C} r={109} fill="none" stroke="var(--ep-glow)" strokeWidth={4} opacity="0.35" />
+        <circle cx={ENERGY_C} cy={ENERGY_C} r={99} fill="var(--ep-body)" />
+        <circle cx={ENERGY_C} cy={ENERGY_C} r={90} fill="none" stroke="var(--ep-shell)" strokeWidth={11} opacity="0.4" />
+        <circle cx={ENERGY_C} cy={ENERGY_C} r={103.5} fill="none" stroke="#FFFFFF" strokeWidth={7} />
+      </svg>
+
+      {/* 4. Circuit/plasma-patroon — geclipt op de bol, draait héél traag */}
+      <div className="kg-energy-planet__core-clip">
+        <svg className="kg-energy-planet__layer kg-energy-planet__circuit" viewBox={viewBox}>
+          <circle cx={242} cy={240} r={68} fill="var(--ep-body-deep)" opacity="0.9" />
+          <circle cx={172} cy={162} r={92} fill="#FFFFFF" opacity="0.07" />
+          <g fill="none" stroke="var(--ep-circuit)" strokeLinecap="round">
+            <circle cx={236} cy={232} r={17} strokeWidth={7} strokeDasharray="72 35" transform="rotate(-35 236 232)" />
+            <circle cx={236} cy={232} r={33} strokeWidth={6} strokeDasharray="118 90" transform="rotate(40 236 232)" />
+            <circle cx={236} cy={232} r={50} strokeWidth={6} strokeDasharray="150 164" transform="rotate(150 236 232)" />
+            <circle cx={236} cy={232} r={67} strokeWidth={5} strokeDasharray="175 246" transform="rotate(-75 236 232)" />
+            <circle cx={152} cy={168} r={8} strokeWidth={5} />
+            <circle cx={176} cy={268} r={6} strokeWidth={4} />
+            <circle cx={268} cy={148} r={7} strokeWidth={5} />
+            <path d="M 150 220 q 14 -16 30 -6" strokeWidth={5} />
+            <path d="M 250 296 q 16 6 28 -6" strokeWidth={5} />
+          </g>
+          <circle cx={236} cy={232} r={58} fill="none" stroke="var(--ep-circuit-deep)" strokeWidth={3} strokeDasharray="2 13" strokeLinecap="round" opacity="0.8" />
+          <polygon points="196,238 218,226 218,252" fill="var(--ep-accent)" />
+          <polygon points="258,196 276,188 272,208" fill="var(--ep-accent)" />
+          <circle cx={236} cy={232} r={4.5} fill="var(--ep-circuit)" />
+          <circle cx={206} cy={196} r={3} fill="var(--ep-circuit)" />
+          <circle cx={272} cy={250} r={3.5} fill="var(--ep-circuit)" />
+          <circle cx={160} cy={250} r={2.5} fill="var(--ep-circuit)" />
+        </svg>
+      </div>
+    </div>
+  );
+});
+
 /* ---------------- Main Component ---------------- */
 
 export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
@@ -1277,26 +1419,20 @@ export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
   // De varianten blijven stabiel per positie zodat themawissels echt als
   // kleurtransities voelen in plaats van als hard vorm-sprongen.
   //
-  // De clusters zijn gelijkmatig over de volledige pagina-breedte verdeeld
-  // (centers 5–85%) zodat de naadloze loop (twee identieke pagina's die
-  // doorschuiven) nooit een "leeg" stuk toont — de stroom wolken is daardoor
-  // visueel ononderbroken.
+  // Bewust schaars: drie grote massa's in totaal (was acht wolkjes) — net als
+  // in de referentie drijven er enkele forse nebula's voorbij met lege ruimte
+  // ertussen, in plaats van een ononderbroken wolkenstroom.
   const topClusters = useMemo(
     () => [
-      { variant: 0, xPct: 6, yPct: 28, size: 268, rotate: -4, opacity: 0.95 },
-      { variant: 2, xPct: 30, yPct: 12, size: 228, rotate: 5, flipX: true, opacity: 0.9 },
-      { variant: 1, xPct: 55, yPct: 34, size: 285, rotate: -2 },
-      { variant: 3, xPct: 80, yPct: 16, size: 238, rotate: 6, opacity: 0.92 },
+      { variant: 0, xPct: 4, yPct: 14, size: 460, rotate: -3, opacity: 0.95 },
+      { variant: 1, xPct: 56, yPct: 30, size: 360, rotate: 4, flipX: true, opacity: 0.85 },
     ],
     [],
   );
 
   const bottomClusters = useMemo(
     () => [
-      { variant: 3, xPct: 10, yPct: 56, size: 248, rotate: 3, flipX: true, opacity: 0.92 },
-      { variant: 1, xPct: 34, yPct: 72, size: 218, rotate: -6 },
-      { variant: 0, xPct: 58, yPct: 50, size: 288, rotate: 8, opacity: 0.95 },
-      { variant: 2, xPct: 84, yPct: 68, size: 230, rotate: -3, flipX: true, opacity: 0.9 },
+      { variant: 2, xPct: 30, yPct: 46, size: 540, rotate: -2, opacity: 0.92 },
     ],
     [],
   );
@@ -1436,8 +1572,14 @@ export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
       <KurzgesagtMoon side="left" themeKey={themeKey} driftPhase={1} driftDuration={12} />
       <KurzgesagtMoon side="right" themeKey={themeKey} driftPhase={-1} driftDuration={10} />
 
-      {/* 9. Central planet — alleen op table. Alle kleuren crossfaden */}
-      {showCentralPlanet && !isKiosk && (
+      {/* 9. Central planet — alleen op table. Alle kleuren kleuren mee met
+            het thema. 'energy' is het nieuwe plasma/circuit-ontwerp; het
+            klassieke ontwerp blijft beschikbaar via CENTRAL_PLANET_DESIGN
+            of ?centralPlanet=classic. */}
+      {showCentralPlanet && !isKiosk && CENTRAL_PLANET_DESIGN === 'energy' && (
+        <EnergyCentralPlanet planetColor={planetColor} accentColor={palette.planetBandCool} />
+      )}
+      {showCentralPlanet && !isKiosk && CENTRAL_PLANET_DESIGN === 'classic' && (
         <div
           className="kurzgesagt-central-planet"
           style={{

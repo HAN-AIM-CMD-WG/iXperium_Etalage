@@ -615,6 +615,93 @@
   transition: border-color 1.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Centrale planeet — 'energy' ontwerp (plasma/circuit). Alle lagen zijn
+   statische SVG's; de beweging (pulse/bob/spin/float) staat op de HTML-
+   elementen en draait dus volledig op de compositor. Kleurwissels lopen via
+   CSS-vars met fill/stroke-transitions (zelfde 1.8s curve als het thema). */
+.kg-energy-planet {
+  --kg-central-size: clamp(17.5rem, 32.5vw, 26.5rem);
+  position: absolute;
+  left: calc(50% - var(--kg-central-size) / 2);
+  top: calc(50% - var(--kg-central-size) / 2);
+  z-index: 50;
+  width: var(--kg-central-size);
+  aspect-ratio: 1;
+  pointer-events: none;
+  animation: kurzgesagt-central-float 9s linear infinite;
+  will-change: transform;
+}
+
+.kg-energy-planet svg {
+  overflow: visible;
+}
+
+.kg-energy-planet circle,
+.kg-energy-planet line,
+.kg-energy-planet path,
+.kg-energy-planet polygon {
+  transition:
+    fill 1.8s cubic-bezier(0.22, 1, 0.36, 1),
+    stroke 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kg-energy-planet__layer {
+  position: absolute;
+  left: -60%;
+  top: -60%;
+  width: 220%;
+  height: 220%;
+}
+
+.kg-energy-planet__rays {
+  animation: kg-energy-rays-pulse 6.5s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.kg-energy-planet__jets {
+  animation: kg-energy-jets-bob 5.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+.kg-energy-planet__core-clip {
+  position: absolute;
+  inset: 0;
+  clip-path: circle(50% at 50% 50%);
+}
+
+.kg-energy-planet__circuit {
+  animation: kg-energy-circuit-spin 80s linear infinite;
+  will-change: transform;
+}
+
+@keyframes kg-energy-rays-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.045);
+    opacity: 1;
+  }
+}
+
+@keyframes kg-energy-jets-bob {
+  0%,
+  100% {
+    transform: translate3d(0, -0.45%, 0);
+  }
+  50% {
+    transform: translate3d(0, 0.45%, 0);
+  }
+}
+
+@keyframes kg-energy-circuit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .kurzgesagt-dot-field {
   position: absolute;
   inset: 0;
