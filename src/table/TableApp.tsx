@@ -168,29 +168,18 @@ function getCompactTitle(title: string) {
 
 const RouteCommandPanel = memo(function RouteCommandPanel({
   activeNode,
-  selectedNode,
   onSelectNode,
 }: {
   activeNode: ContentNode | null;
-  selectedNode: ContentNode | null;
   onSelectNode: (node: ContentNode) => void;
 }) {
-  const isThemeSelected = Boolean(selectedNode);
-
   return (
     <motion.aside
       layout
       transition={PANEL_LAYOUT_TRANSITION}
-      className="pointer-events-auto fixed left-8 top-[18vh] z-[90] flex w-[min(24vw,21rem)] max-w-[21rem] flex-col gap-4 rounded-[1.875rem] border p-5 text-white shadow-[0_24px_90px_rgba(0,0,0,0.30)] backdrop-blur-xl transition-[background,border-color,box-shadow] duration-500 max-[1120px]:hidden"
-      style={getThemePanelStyle(selectedNode ?? activeNode, isThemeSelected)}
+      className="pointer-events-auto fixed left-8 top-[18vh] z-[90] flex w-[min(24vw,21rem)] max-w-[21rem] flex-col gap-4 rounded-[1.875rem] border border-white/15 p-5 text-white shadow-[0_24px_90px_rgba(0,0,0,0.30)] backdrop-blur-xl max-[1120px]:hidden"
+      style={{ backgroundColor: PANEL_BACKGROUND }}
     >
-      {isThemeSelected && selectedNode && (
-        <div
-          className="h-2 w-full rounded-full shadow-[0_0_18px_rgba(255,255,255,0.18)]"
-          style={{ background: `linear-gradient(90deg, ${selectedNode.color}, ${pastel(selectedNode.color)})` }}
-        />
-      )}
-
       <div className="flex flex-col gap-3">
         <h2 className="text-[2.35rem] font-black leading-[0.98] tracking-normal text-white">
           Kies een kennisroute
@@ -528,7 +517,7 @@ export function TableApp() {
       <PerfStats />
 
       <ConnectionPill connected={connected} health={health} />
-      <RouteCommandPanel activeNode={activeRouteNode} selectedNode={selectedThemeNode} onSelectNode={handleSelectMain} />
+      <RouteCommandPanel activeNode={activeRouteNode} onSelectNode={handleSelectMain} />
       <FocusPreviewPanel routeNode={activeRouteNode} focusNode={panelFocusNode} progress={progress} themeSelected={Boolean(selectedThemeNode)} />
 
       {/* iXperium branding */}
