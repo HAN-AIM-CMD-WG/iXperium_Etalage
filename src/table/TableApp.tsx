@@ -334,9 +334,10 @@ const BackToRoutesButton = memo(function BackToRoutesButton({
     <motion.button
       type="button"
       onClick={onBack}
-      className="pointer-events-auto relative flex min-h-[4.5rem] w-full items-center gap-3 overflow-hidden rounded-[1.35rem] border-4 border-[#07185f] bg-[#fff2b8] px-4 py-3 text-left text-[#07185f] shadow-[0_8px_0_rgba(7,24,95,0.96),0_18px_48px_rgba(0,0,0,0.34)] transition-transform hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/75"
+      className="pointer-events-auto relative flex min-h-[4.5rem] w-full items-center gap-3 overflow-hidden rounded-[1.35rem] border-4 border-white/75 px-4 py-3 text-left text-[#07185f] shadow-[0_8px_0_rgba(7,24,95,0.72),0_18px_48px_rgba(0,0,0,0.34)] backdrop-blur-xl transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/75"
       style={{
-        boxShadow: `0 8px 0 rgba(7,24,95,0.96), 0 0 34px ${node.color}aa, 0 18px 48px rgba(0,0,0,0.34)`,
+        background: 'linear-gradient(135deg, rgba(255,255,255,0.88) 0%, rgba(217,241,255,0.76) 46%, rgba(244,250,255,0.58) 100%)',
+        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -12px 28px rgba(97,177,255,0.16), 0 8px 0 rgba(7,24,95,0.72), 0 0 34px ${node.color}88, 0 18px 48px rgba(0,0,0,0.34)`,
       }}
       initial={{ opacity: 0, y: -8, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -344,14 +345,7 @@ const BackToRoutesButton = memo(function BackToRoutesButton({
       transition={{ duration: 0.26, ease: PANEL_LAYOUT_EASE }}
       whileTap={{ scale: 0.97, y: 2 }}
     >
-      <span
-        className="pointer-events-none absolute inset-x-4 top-2 h-1.5 rounded-full"
-        style={{
-          background: `linear-gradient(90deg, ${node.color}, ${pastel(node.color)}, ${node.color})`,
-          boxShadow: `0 0 16px ${node.color}aa`,
-        }}
-      />
-      <span className="relative z-10 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[0.9rem] bg-[#07185f] text-[#fff2b8] shadow-[0_4px_0_rgba(7,24,95,0.35)]">
+      <span className="relative z-10 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[0.9rem] border border-white/40 bg-[#07185f]/85 text-white shadow-[0_4px_0_rgba(7,24,95,0.28),inset_0_1px_0_rgba(255,255,255,0.24)]">
         <ChevronLeft className="h-7 w-7" strokeWidth={3.5} />
       </span>
       <span className="relative z-10 min-w-0 text-[1.02rem] font-black leading-[1.06] tracking-[0.035em]">
