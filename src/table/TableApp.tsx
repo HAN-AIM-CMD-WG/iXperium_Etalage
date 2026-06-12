@@ -401,7 +401,6 @@ export function TableApp() {
     selectedSub: null
   });
 
-  const [currentTheme, setCurrentTheme] = useState('main');
   const [nearestPlanet, setNearestPlanet] = useState<ContentNode | null>(null);
   // Onderwerp (kind) dat in de submenu-ring in focus staat — voedt de
   // voortgangsbalk + markering in het rechter venster terwijl je door de
@@ -414,7 +413,7 @@ export function TableApp() {
     mode: FlyMode;
   } | null>(null);
   const focusThrottleRef = useRef(0);
-  const lastSyncedFocusNodeIdRef = useRef<string | null>(null);
+  const lastPreviewFocusNodeIdRef = useRef<string | null>(null);
   const visualStyle = DEFAULT_VISUAL_STYLE;
 
   const handleSelectMain = useCallback((node: ContentNode, origin?: PlanetSelectOrigin) => {
@@ -428,10 +427,9 @@ export function TableApp() {
       selectedMain: node,
       selectedSub: null,
     });
-    setCurrentTheme(node.theme);
     setNearestPlanet(node);
     setFocusedSub(null);
-    lastSyncedFocusNodeIdRef.current = node.id;
+    lastPreviewFocusNodeIdRef.current = node.id;
     focusThrottleRef.current = performance.now();
     publishNavigation({
       level: 'submenu',
@@ -468,25 +466,22 @@ export function TableApp() {
   }, []);
 
   const handleFocusChange = useCallback((node: ContentNode) => {
-    if (lastSyncedFocusNodeIdRef.current === node.id) return;
+    if (lastPreviewFocusNodeIdRef.current === node.id) return;
 
     const now = performance.now();
-    const isInitialFocus = lastSyncedFocusNodeIdRef.current === null;
-    // Theme/socket updates are visible only when the focused route changes.
+    const isInitialFocus = lastPreviewFocusNodeIdRef.current === null;
+    // On the unselected home screen this is only a lightweight preview signal.
+    // Do not drive the full-screen theme/socket from auto-rotating focus: on
+    // weaker Chromium/GPU setups that created near-continuous backdrop
+    // crossfades when returning home or dragging the orbit.
     if (!isInitialFocus && now - focusThrottleRef.current < FOCUS_SYNC_THROTTLE_MS) return;
     focusThrottleRef.current = now;
-    lastSyncedFocusNodeIdRef.current = node.id;
+    lastPreviewFocusNodeIdRef.current = node.id;
 
     startTransition(() => {
-      setCurrentTheme(node.theme);
       setNearestPlanet(node);
     });
-    publishNavigation({
-      level: 'main',
-      theme: node.theme,
-      visualStyle: DEFAULT_VISUAL_STYLE,
-    });
-  }, [publishNavigation]);
+  }, []);
 
   // Lichtgewicht focus-handler voor de submenu-ring: alleen lokale state, geen
   // socket-publicatie. Houdt bij welk onderwerp-planeet vooraan staat zodat de
@@ -501,11 +496,10 @@ export function TableApp() {
       selectedMain: null,
       selectedSub: null
     });
-    setCurrentTheme('main');
     setNearestPlanet(null);
     setFocusedSub(null);
     focusThrottleRef.current = 0;
-    lastSyncedFocusNodeIdRef.current = null;
+    lastPreviewFocusNodeIdRef.current = null;
     resetNavigation();
   }, [resetNavigation]);
 
@@ -518,13 +512,14 @@ export function TableApp() {
 
   const activeRouteNode = navState.selectedMain ?? nearestPlanet ?? contentData[1] ?? contentData[0];
   const selectedThemeNode = navState.selectedMain;
-  const pageAccentNode = selectedThemeNode ?? nearestPlanet;
+  const sceneTheme = selectedThemeNode?.theme ?? 'main';
+  const pageAccentNode = selectedThemeNode;
   const pageAccentStyle = pageAccentNode
     ? ({
         '--table-accent': pageAccentNode.color,
-        '--table-accent-soft': rgbaHex(pageAccentNode.color, selectedThemeNode ? 0.34 : 0.14),
-        '--table-accent-wash': rgbaHex(pageAccentNode.color, selectedThemeNode ? 0.22 : 0.08),
-        '--table-accent-rim': rgbaHex(pageAccentNode.color, selectedThemeNode ? 0.52 : 0.22),
+        '--table-accent-soft': rgbaHex(pageAccentNode.color, 0.34),
+        '--table-accent-wash': rgbaHex(pageAccentNode.color, 0.22),
+        '--table-accent-rim': rgbaHex(pageAccentNode.color, 0.52),
       } as CSSProperties & Record<string, string>)
     : undefined;
 
@@ -558,11 +553,9 @@ export function TableApp() {
     >
       {/* Vector scene layer. Pointer-events zijn uitgeschakeld. */}
       <SpaceCanvas
-        theme={currentTheme}
+        theme={sceneTheme}
         surface="table"
-        centralPlanetColor={navState.level === 'submenu'
-          ? navState.selectedMain?.color ?? nearestPlanet?.color
-          : nearestPlanet?.color}
+        centralPlanetColor={selectedThemeNode?.color}
         showCentralPlanet={navState.level !== 'detail'}
       />
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_50%_43%,rgba(102,42,136,0.22),transparent_24%),radial-gradient(circle_at_18%_82%,rgba(255,51,68,0.18),transparent_28%),radial-gradient(circle_at_88%_18%,rgba(30,144,255,0.18),transparent_24%),linear-gradient(135deg,rgba(7,16,22,0.54),rgba(17,19,28,0.38))]" />
@@ -570,7 +563,7 @@ export function TableApp() {
       <div
         className="pointer-events-none absolute inset-0 z-[2] transition-opacity duration-500"
         style={{
-          opacity: pageAccentNode ? (selectedThemeNode ? 1 : 0.45) : 0,
+          opacity: pageAccentNode ? 1 : 0,
           background: 'radial-gradient(circle at 50% 50%, var(--table-accent-soft), transparent 34%), linear-gradient(135deg, var(--table-accent-wash), transparent 46%, var(--table-accent-wash))',
           mixBlendMode: 'screen',
         }}
@@ -588,7 +581,7 @@ export function TableApp() {
       <PerfStats />
 
       <ConnectionPill connected={connected} health={health} />
-      <RouteCommandPanel activeNode={activeRouteNode} onSelectNode={handleSelectMain} />
+      <RouteCommandPanel activeNode={selectedThemeNode} onSelectNode={handleSelectMain} />
       <RightPanelStack
         routeNode={activeRouteNode}
         focusNode={panelFocusNode}
