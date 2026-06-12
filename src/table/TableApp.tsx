@@ -10,7 +10,7 @@ import { ContentView } from '../app/components/ContentView';
 import { FlyingPlanet, type FlyMode } from '../app/components/FlyingPlanet';
 import { SpaceCanvas } from '../app/components/scene/SpaceCanvas';
 import { PerfStats } from '../app/components/scene/PerfStats';
-import ixperiumLogoUrl from '../../zooi/Ixperiumlogo.png';
+import smartIndustryWordmarkUrl from '../../Smart-Industry-wit.png';
 
 const TABLE_SCENE_SCALE = 0.88;
 const TABLE_MAIN_ORBIT = {
@@ -58,16 +58,6 @@ function mixHex(hex: string, target: string, amount: number) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-function mixHexRgba(hex: string, target: string, amount: number, alpha: number) {
-  const sourceRgb = hexToRgb(hex);
-  const targetRgb = hexToRgb(target);
-  const t = Math.min(1, Math.max(0, amount));
-  const r = Math.round(sourceRgb.r + (targetRgb.r - sourceRgb.r) * t);
-  const g = Math.round(sourceRgb.g + (targetRgb.g - sourceRgb.g) * t);
-  const b = Math.round(sourceRgb.b + (targetRgb.b - sourceRgb.b) * t);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
 function rgbaHex(hex: string, alpha: number) {
   const { r, g, b } = hexToRgb(hex);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
@@ -91,7 +81,7 @@ function pastel(hex: string) {
  *
  * Geen bg-gradient / geen blur rings meer: shader + bloom doen dat straks allemaal.
  */
-const CentralPlanet = memo(function CentralPlanet({ accentColor = '#8B5CF6' }: { accentColor?: string }) {
+const CentralPlanet = memo(function CentralPlanet() {
   return (
     <motion.div
       className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
@@ -108,22 +98,11 @@ const CentralPlanet = memo(function CentralPlanet({ accentColor = '#8B5CF6' }: {
       >
         <div
           className="central-planet-label ixperium-core-mark relative z-10 w-[min(17.5rem,38vw)] text-center"
-          style={{
-            '--central-accent': accentColor,
-            '--central-glow': rgbaHex(accentColor, 0.72),
-            '--central-logo-glow-core': mixHexRgba(accentColor, '#FFFFFF', 0.46, 0.95),
-            '--central-logo-glow-soft': mixHexRgba(accentColor, '#FFFFFF', 0.72, 0.86),
-          } as CSSProperties & {
-            '--central-accent': string;
-            '--central-glow': string;
-            '--central-logo-glow-core': string;
-            '--central-logo-glow-soft': string;
-          }}
         >
           <img
             className="ixperium-core-mark__logo"
-            src={ixperiumLogoUrl}
-            alt="iXperium Centre of Expertise"
+            src={smartIndustryWordmarkUrl}
+            alt="Smart Industry"
             draggable={false}
           />
         </div>
@@ -542,7 +521,7 @@ export function TableApp() {
             </motion.div>
 
             {/* Central planet — WebGL doet de bol, DOM doet alleen het label */}
-            <CentralPlanet accentColor={nearestPlanet?.color ?? '#8B5CF6'} />
+            <CentralPlanet />
 
             <OrbitRing
               nodes={contentData}

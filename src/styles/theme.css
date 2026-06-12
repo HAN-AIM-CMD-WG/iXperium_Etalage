@@ -875,27 +875,6 @@
   filter: none;
 }
 
-[data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  left: 50%;
-  top: 50%;
-  width: min(23.5rem, 108%);
-  height: min(7.8rem, 138%);
-  transform: translate(-50%, -50%);
-  border-radius: 999px;
-  background:
-    radial-gradient(ellipse at center,
-      rgba(255, 255, 255, 0.86) 0%,
-      var(--central-logo-glow-core, rgba(255, 255, 255, 0.8)) 34%,
-      var(--central-logo-glow-soft, rgba(255, 255, 255, 0.48)) 62%,
-      transparent 78%);
-  filter: blur(14px);
-  opacity: 0.92;
-  transform-origin: center;
-}
-
 [data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__logo {
   position: relative;
   z-index: 1;
@@ -903,6 +882,9 @@
   width: min(21.75rem, 100%);
   height: auto;
   margin: 0 auto;
+  filter: none;
+  text-shadow: none;
+  box-shadow: none;
   user-select: none;
 }
 
