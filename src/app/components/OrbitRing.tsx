@@ -1202,7 +1202,6 @@ function drawVectorPlanet(
   const layerOpacity = (isFront ? planet.opacity : planet.opacity * 0.54) * visibility;
   const color = planet.node.color;
   const radius = planet.radius;
-  const surfacePhase = animTime * (0.11 + (seed % 7) * 0.008) + seed * 0.003;
   const atmospherePulse = 0.5 + 0.5 * Math.sin(animTime * 0.7 + seed * 0.02);
 
   const vectorSpriteSet = getVectorPlanetSprites(color);
@@ -1261,21 +1260,6 @@ function drawVectorPlanet(
     paintVectorPlanetSurface(context, radius, color, seed, animTime);
     context.restore();
   }
-
-  context.save();
-  context.lineCap = 'round';
-  context.lineWidth = clamp(radius * 0.12, 6, 14);
-  context.strokeStyle = `rgba(255, 255, 255, ${isFront ? 0.88 : 0.42})`;
-  context.beginPath();
-  context.arc(
-    planet.x + radius * 0.02,
-    planet.y - radius * 0.01,
-    radius * 0.94,
-    -0.58 + Math.sin(surfacePhase * 0.35) * 0.03,
-    0.72 + Math.sin(surfacePhase * 0.3) * 0.03,
-  );
-  context.stroke();
-  context.restore();
 
   if (isFront && visibility > 0.2 && planet.radius > 28) {
     const layout = getCachedPlanetLabelLayout(context, planet.node, planet.radius, planet.scale);
