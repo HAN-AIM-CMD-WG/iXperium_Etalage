@@ -319,7 +319,7 @@
 }
 
 .kurzgesagt-backdrop {
-  color: #fff2b8;
+  color: #ffffff;
   contain: paint;
   transform: translateZ(0);
   backface-visibility: hidden;
@@ -752,19 +752,19 @@
 [data-visual-style='kurzgesagt'] .table-title,
 [data-visual-style='kurzgesagt'] .kiosk-title {
   font-family: var(--ixp-font-heading);
-  color: #fff2b8;
-  letter-spacing: 0;
+  color: #ffffff;
+  letter-spacing: 0.01em;
   text-shadow:
-    0 1px 0 var(--ixp-yellow),
-    4px 4px 0 rgba(87, 56, 118, 0.88);
+    0 2px 18px rgba(0, 0, 0, 0.68),
+    0 0 24px rgba(91, 182, 255, 0.22);
 }
 
 /* iXperium wordmark linksboven — zonder drop shadow, clean op het donker. */
 [data-visual-style='kurzgesagt'] .app-branding h1 {
   font-family: var(--ixp-font-heading);
-  color: #fff2b8;
-  letter-spacing: 0;
-  text-shadow: none;
+  color: #ffffff;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.52);
 }
 
 [data-visual-style='kurzgesagt'] .app-branding p,
@@ -773,9 +773,9 @@
 [data-visual-style='kurzgesagt'] .kiosk-eyebrow,
 [data-visual-style='kurzgesagt'] .kiosk-copy {
   font-family: var(--ixp-font-body);
-  color: #fff2b8;
+  color: rgba(255, 255, 255, 0.72);
   letter-spacing: 0;
-  text-shadow: 2px 2px 0 rgba(25, 53, 60, 0.82);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.54);
 }
 
 [data-visual-style='kurzgesagt'] .app-branding__mark {
@@ -831,8 +831,8 @@
   color: var(--central-text, #07185f);
   letter-spacing: 0;
   text-shadow:
-    0 1px 0 var(--central-highlight, #fff2b8),
-    0 0 13px var(--central-glow, rgba(255, 242, 184, 0.5)),
+    0 1px 0 var(--central-highlight, #ffffff),
+    0 0 13px var(--central-glow, rgba(255, 255, 255, 0.36)),
     3px 4px 0 rgba(7, 24, 95, 0.36);
 }
 
@@ -840,15 +840,15 @@
   font-family: var(--ixp-font-heading);
   font-size: clamp(2.25rem, 4.1vw, 3.35rem);
   line-height: 0.94;
-  -webkit-text-stroke: 1.45px var(--central-highlight, #fff2b8);
+  -webkit-text-stroke: 1.45px var(--central-highlight, #ffffff);
 }
 
 [data-visual-style='kurzgesagt'] .central-planet-label__subtitle {
   font-family: var(--ixp-font-body);
   color: var(--central-secondary, #07185f);
   text-shadow:
-    0 1px 0 var(--central-highlight, #fff2b8),
-    0 0 9px var(--central-glow, rgba(255, 242, 184, 0.5)),
+    0 1px 0 var(--central-highlight, #ffffff),
+    0 0 9px var(--central-glow, rgba(255, 255, 255, 0.34)),
     2px 3px 0 rgba(7, 24, 95, 0.3);
 }
 
@@ -858,7 +858,7 @@
   font-weight: 900;
   opacity: 0.86;
   color: var(--central-secondary, #07185f);
-  -webkit-text-stroke: 0.45px var(--central-highlight, #fff2b8);
+  -webkit-text-stroke: 0.45px var(--central-highlight, #ffffff);
 }
 
 [data-visual-style='kurzgesagt'] .central-planet-divider {
@@ -927,20 +927,20 @@
     linear-gradient(90deg, var(--ixp-yellow) 0 34%, var(--ixp-magenta) 34% 67%, var(--ixp-cyan) 67% 100%);
   box-shadow:
     0 3px 0 rgba(7, 24, 95, 0.42),
-    0 0 15px var(--central-glow, rgba(255, 242, 184, 0.45));
+    0 0 15px var(--central-glow, rgba(255, 255, 255, 0.28));
 }
 
 [data-visual-style='kurzgesagt'] .central-planet-label.ixperium-core-mark .ixperium-core-mark__subline {
   margin: 0.75rem 0 0;
-  color: #fff2b8;
+  color: rgba(255, 255, 255, 0.76);
   font-family: var(--ixp-font-body);
   font-size: clamp(0.72rem, 1.25vw, 0.95rem);
   font-weight: 800;
   line-height: 1.18;
   letter-spacing: 0.02em;
   text-shadow:
-    0 1px 10px rgba(0, 0, 0, 0.56),
-    2px 2px 0 rgba(87, 56, 118, 0.52);
+    0 2px 14px rgba(0, 0, 0, 0.58),
+    0 0 18px rgba(91, 182, 255, 0.18);
   -webkit-text-stroke: 0;
 }
 
@@ -952,18 +952,18 @@
 
 [data-visual-style='kurzgesagt'] .content-card-title {
   font-family: var(--ixp-font-heading);
-  color: #fff2b8;
-  letter-spacing: 0;
+  color: #ffffff;
+  letter-spacing: 0.01em;
   text-shadow:
-    0 1px 0 var(--ixp-yellow),
-    3px 3px 0 rgba(87, 56, 118, 0.86);
+    0 2px 18px rgba(0, 0, 0, 0.66),
+    0 0 22px rgba(91, 182, 255, 0.2);
 }
 
 [data-visual-style='kurzgesagt'] .content-card-copy,
 [data-visual-style='kurzgesagt'] .content-card-related h3 {
   font-family: var(--ixp-font-body);
-  color: #fff2b8;
-  text-shadow: 2px 2px 0 rgba(25, 53, 60, 0.78);
+  color: rgba(255, 255, 255, 0.76);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.54);
 }
 
 [data-visual-style='kurzgesagt'] .content-card-related {
@@ -1012,7 +1012,7 @@
 }
 
 [data-visual-style='kurzgesagt'] .kiosk-main {
-  color: #fff2b8;
+  color: #ffffff;
 }
 
 [data-visual-style='kurzgesagt'] .kiosk-route-card,
