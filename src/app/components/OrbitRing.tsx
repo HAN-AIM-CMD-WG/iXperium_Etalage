@@ -223,7 +223,7 @@ const VECTOR_HALO_OUTER = 1.38;
 const VECTOR_HALO_SIZE = Math.ceil(VECTOR_SPRITE_RENDER_RADIUS * VECTOR_HALO_OUTER * 2 + 4);
 // Back-laag halo = front-alpha × deze factor (origineel: stops 0.16/0.08 t.o.v.
 // 0.34/0.16 ≈ 0.47–0.5). Zo bakken we één front-sprite en dimmen we de back-laag.
-const VECTOR_HALO_BACK_ALPHA = 0.48;
+const VECTOR_HALO_BACK_ALPHA = 0.62;
 
 type SpriteCanvas = HTMLCanvasElement | OffscreenCanvas;
 type PlanetSpriteSet = { halos: SpriteCanvas; body: SpriteCanvas };
@@ -369,8 +369,8 @@ function getVectorPlanetSprites(color: string): VectorPlanetSpriteSet | null {
     haloCx, haloCx, radius * 0.86,
     haloCx, haloCx, radius * VECTOR_HALO_OUTER,
   );
-  haloGrad.addColorStop(0, rgba(color, 0.34));
-  haloGrad.addColorStop(0.44, rgba(color, 0.16));
+  haloGrad.addColorStop(0, rgba(color, 0.48));
+  haloGrad.addColorStop(0.44, rgba(color, 0.24));
   haloGrad.addColorStop(1, rgba(color, 0));
   haloCtx.beginPath();
   haloCtx.arc(haloCx, haloCx, radius * VECTOR_HALO_OUTER, 0, TAU);
@@ -382,10 +382,10 @@ function getVectorPlanetSprites(color: string): VectorPlanetSpriteSet | null {
   bodyCtx.arc(cx, cy, radius, 0, TAU);
   bodyCtx.clip();
   const bodyGradient = bodyCtx.createLinearGradient(cx - radius, cy - radius * 0.12, cx + radius, cy + radius * 0.1);
-  bodyGradient.addColorStop(0, mixRgba(color, { r: 48, g: 0, b: 96 }, 0.44, 1));
-  bodyGradient.addColorStop(0.46, mixRgba(color, { r: 255, g: 60, b: 150 }, 0.18, 1));
-  bodyGradient.addColorStop(0.78, mixRgba(color, { r: 255, g: 216, b: 48 }, 0.34, 1));
-  bodyGradient.addColorStop(1, mixRgba(color, { r: 255, g: 255, b: 210 }, 0.58, 1));
+  bodyGradient.addColorStop(0, mixRgba(color, { r: 48, g: 0, b: 96 }, 0.34, 1));
+  bodyGradient.addColorStop(0.46, mixRgba(color, { r: 255, g: 60, b: 150 }, 0.12, 1));
+  bodyGradient.addColorStop(0.78, mixRgba(color, { r: 255, g: 216, b: 48 }, 0.28, 1));
+  bodyGradient.addColorStop(1, mixRgba(color, { r: 255, g: 255, b: 210 }, 0.5, 1));
   bodyCtx.fillStyle = bodyGradient;
   bodyCtx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
   bodyCtx.restore();
@@ -402,8 +402,8 @@ function getVectorPlanetSprites(color: string): VectorPlanetSpriteSet | null {
     cy - radius * 0.36,
     radius * 1.0,
   );
-  innerLight.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
-  innerLight.addColorStop(0.46, mixRgba(color, { r: 255, g: 255, b: 255 }, 0.4, 0.12));
+  innerLight.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+  innerLight.addColorStop(0.46, mixRgba(color, { r: 255, g: 255, b: 255 }, 0.4, 0.18));
   innerLight.addColorStop(1, 'rgba(255, 255, 255, 0)');
   lightCtx.fillStyle = innerLight;
   lightCtx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
@@ -1229,8 +1229,8 @@ function drawVectorPlanet(
       planet.y,
       radius * (1.32 + atmospherePulse * 0.06),
     );
-    halo.addColorStop(0, rgba(color, isFront ? 0.34 : 0.16));
-    halo.addColorStop(0.44, rgba(color, isFront ? 0.16 : 0.08));
+    halo.addColorStop(0, rgba(color, isFront ? 0.48 : 0.26));
+    halo.addColorStop(0.44, rgba(color, isFront ? 0.24 : 0.13));
     halo.addColorStop(1, rgba(color, 0));
     context.beginPath();
     context.arc(planet.x, planet.y, radius * 1.38, 0, TAU);
@@ -1616,7 +1616,7 @@ export const OrbitRing = memo(function OrbitRing({
       const normalizedAngle = normalizeAngle(nodeAngle);
       const depth = Math.sin(normalizedAngle);
       const scale = 0.48 + (depth * 0.5 + 0.5) * 0.64;
-      const opacity = 0.34 + (depth * 0.5 + 0.5) * 0.66;
+      const opacity = 0.46 + (depth * 0.5 + 0.5) * 0.54;
       const frontVisibility = smoothstep(LAYER_FADE_START, LAYER_FADE_END, depth);
       const backVisibility = 1 - frontVisibility;
       const localPoint = rotatePoint(
@@ -1787,6 +1787,7 @@ export const OrbitRing = memo(function OrbitRing({
     const resizeObserver = new ResizeObserver(resizeCanvas);
     resizeObserver.observe(wrapper);
     resizeCanvas();
+    drawOrbit(backCanvas, backContext, frontCanvas, frontContext, labelContext);
     window.addEventListener('resize', handleWindowResize, { passive: true });
 
     const tick = () => {

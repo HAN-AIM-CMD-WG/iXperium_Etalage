@@ -84,14 +84,16 @@ export const Planet = memo(function Planet({
               <motion.button
                 type="button"
                 onClick={onBack}
-                className="pointer-events-auto mx-auto mb-4 flex items-center gap-2 rounded-full border border-white/25 bg-white/[0.12] px-4 py-2 text-xs font-bold tracking-normal text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                className="pointer-events-auto mx-auto mb-5 flex items-center gap-3 rounded-[1.05rem] border-4 border-[#07185f] bg-[#fff2b8] px-6 py-3.5 text-lg font-black leading-none tracking-normal text-[#07185f] shadow-[0_8px_0_rgba(7,24,95,0.92),0_18px_34px_rgba(0,0,0,0.32)] transition-transform hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70"
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.4 }}
-                whileTap={{ scale: 0.94 }}
-                style={{ boxShadow: `0 0 22px ${node.color}55, 0 8px 24px rgba(0,0,0,0.35)` }}
+                whileTap={{ scale: 0.96, y: 2 }}
+                style={{
+                  boxShadow: `0 8px 0 rgba(7,24,95,0.92), 0 0 30px ${node.color}88, 0 18px 34px rgba(0,0,0,0.32)`,
+                }}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-7 w-7" strokeWidth={3.5} />
                 <span>Terug</span>
               </motion.button>
             )}

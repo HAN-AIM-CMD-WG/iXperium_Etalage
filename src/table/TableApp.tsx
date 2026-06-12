@@ -29,6 +29,10 @@ const CENTER_FLY_DIAMETER = 300;
 const FOCUS_SYNC_THROTTLE_MS = 220;
 const PANEL_BACKGROUND = 'rgba(30, 8, 58, 0.30)';
 const PANEL_LAYOUT_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const VIEW_TRANSITION = {
+  duration: 0.2,
+  ease: PANEL_LAYOUT_EASE,
+};
 const PANEL_LAYOUT_TRANSITION = {
   layout: { duration: 0.48, ease: PANEL_LAYOUT_EASE },
 };
@@ -61,6 +65,22 @@ function mixHex(hex: string, target: string, amount: number) {
 function rgbaHex(hex: string, alpha: number) {
   const { r, g, b } = hexToRgb(hex);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getThemePanelStyle(node: ContentNode | null, selected: boolean): CSSProperties {
+  if (!node) {
+    return { backgroundColor: PANEL_BACKGROUND };
+  }
+
+  return {
+    background: `linear-gradient(145deg, ${rgbaHex(node.color, selected ? 0.46 : 0.26)} 0%, rgba(18, 6, 34, ${selected ? 0.74 : 0.58}) 48%, ${rgbaHex(node.color, selected ? 0.28 : 0.14)} 100%)`,
+    borderColor: rgbaHex(node.color, selected ? 0.74 : 0.38),
+    boxShadow: [
+      `0 0 0 2px ${rgbaHex(node.color, selected ? 0.2 : 0.08)}`,
+      `0 0 ${selected ? 52 : 28}px ${rgbaHex(node.color, selected ? 0.36 : 0.16)}`,
+      '0 24px 90px rgba(0,0,0,0.30)',
+    ].join(', '),
+  };
 }
 
 /**
@@ -148,20 +168,30 @@ function getCompactTitle(title: string) {
 
 const RouteCommandPanel = memo(function RouteCommandPanel({
   activeNode,
+  selectedNode,
   onSelectNode,
 }: {
   activeNode: ContentNode | null;
+  selectedNode: ContentNode | null;
   onSelectNode: (node: ContentNode) => void;
 }) {
+  const isThemeSelected = Boolean(selectedNode);
+
   return (
     <motion.aside
       layout
       transition={PANEL_LAYOUT_TRANSITION}
-      className="pointer-events-auto fixed left-8 top-[18vh] z-[90] flex w-[min(24vw,21rem)] max-w-[21rem] flex-col gap-4 rounded-[1.875rem] border border-white/15 p-5 text-white shadow-[0_24px_90px_rgba(0,0,0,0.30)] backdrop-blur-xl max-[1120px]:hidden"
-      style={{ backgroundColor: PANEL_BACKGROUND }}
+      className="pointer-events-auto fixed left-8 top-[18vh] z-[90] flex w-[min(24vw,21rem)] max-w-[21rem] flex-col gap-4 rounded-[1.875rem] border p-5 text-white shadow-[0_24px_90px_rgba(0,0,0,0.30)] backdrop-blur-xl transition-[background,border-color,box-shadow] duration-500 max-[1120px]:hidden"
+      style={getThemePanelStyle(selectedNode ?? activeNode, isThemeSelected)}
     >
+      {isThemeSelected && selectedNode && (
+        <div
+          className="h-2 w-full rounded-full shadow-[0_0_18px_rgba(255,255,255,0.18)]"
+          style={{ background: `linear-gradient(90deg, ${selectedNode.color}, ${pastel(selectedNode.color)})` }}
+        />
+      )}
+
       <div className="flex flex-col gap-3">
-        <p className="text-xs font-bold tracking-[0.24em] text-white/55">Routebord</p>
         <h2 className="text-[2.35rem] font-black leading-[0.98] tracking-normal text-white">
           Kies een kennisroute
         </h2>
@@ -208,10 +238,12 @@ const FocusPreviewPanel = memo(function FocusPreviewPanel({
   routeNode,
   focusNode,
   progress,
+  themeSelected,
 }: {
   routeNode: ContentNode;
   focusNode: ContentNode;
   progress: number;
+  themeSelected: boolean;
 }) {
   // Alle onderwerpen binnen de gekozen kennisroute.
   const topics = [...(routeNode.children ?? [])].reverse();
@@ -225,11 +257,17 @@ const FocusPreviewPanel = memo(function FocusPreviewPanel({
     <motion.aside
       layout
       transition={PANEL_LAYOUT_TRANSITION}
-      className="pointer-events-none fixed right-8 top-[16vh] z-[90] flex max-h-[74vh] w-[min(24vw,21rem)] max-w-[21rem] flex-col gap-4 rounded-[1.875rem] border border-white/15 p-5 text-white shadow-[0_24px_90px_rgba(0,0,0,0.30)] backdrop-blur-xl max-[1120px]:hidden"
-      style={{ backgroundColor: PANEL_BACKGROUND }}
+      className="pointer-events-none fixed right-8 top-[16vh] z-[90] flex max-h-[74vh] w-[min(24vw,21rem)] max-w-[21rem] flex-col gap-4 rounded-[1.875rem] border p-5 text-white shadow-[0_24px_90px_rgba(0,0,0,0.30)] backdrop-blur-xl transition-[background,border-color,box-shadow] duration-500 max-[1120px]:hidden"
+      style={getThemePanelStyle(routeNode, themeSelected)}
     >
+      {themeSelected && (
+        <div
+          className="h-2 w-full flex-shrink-0 rounded-full shadow-[0_0_18px_rgba(255,255,255,0.18)]"
+          style={{ background: `linear-gradient(90deg, ${routeNode.color}, ${barColor})` }}
+        />
+      )}
+
       <div className="flex flex-col gap-2.5">
-        <p className="text-xs font-bold tracking-[0.24em] text-white/55">Kennisroute</p>
         <h2 className="text-[1.7rem] font-black leading-[1.02] tracking-normal text-white">
           {routeNode.title}
         </h2>
@@ -419,6 +457,16 @@ export function TableApp() {
   }, [navState]);
 
   const activeRouteNode = navState.selectedMain ?? nearestPlanet ?? contentData[1] ?? contentData[0];
+  const selectedThemeNode = navState.selectedMain;
+  const pageAccentNode = selectedThemeNode ?? nearestPlanet;
+  const pageAccentStyle = pageAccentNode
+    ? ({
+        '--table-accent': pageAccentNode.color,
+        '--table-accent-soft': rgbaHex(pageAccentNode.color, selectedThemeNode ? 0.34 : 0.14),
+        '--table-accent-wash': rgbaHex(pageAccentNode.color, selectedThemeNode ? 0.22 : 0.08),
+        '--table-accent-rim': rgbaHex(pageAccentNode.color, selectedThemeNode ? 0.52 : 0.22),
+      } as CSSProperties & Record<string, string>)
+    : undefined;
 
   // Het rechter venster toont de gekozen kennisroute + al haar onderwerpen.
   // - In de hoofdring scroll je door de routes: voortgang = positie van de
@@ -445,6 +493,8 @@ export function TableApp() {
     <div
       className="relative isolate size-full min-h-screen overflow-hidden bg-[#071016] text-white select-none"
       data-visual-style={visualStyle}
+      data-theme-selected={selectedThemeNode ? 'true' : 'false'}
+      style={pageAccentStyle}
     >
       {/* Vector scene layer. Pointer-events zijn uitgeschakeld. */}
       <SpaceCanvas
@@ -457,13 +507,29 @@ export function TableApp() {
       />
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_50%_43%,rgba(102,42,136,0.22),transparent_24%),radial-gradient(circle_at_18%_82%,rgba(255,51,68,0.18),transparent_28%),radial-gradient(circle_at_88%_18%,rgba(30,144,255,0.18),transparent_24%),linear-gradient(135deg,rgba(7,16,22,0.54),rgba(17,19,28,0.38))]" />
       <div className="pointer-events-none absolute inset-0 z-[1] opacity-[0.10] [background-image:linear-gradient(115deg,rgba(255,255,255,0.25)_1px,transparent_1px),linear-gradient(25deg,rgba(255,255,255,0.20)_1px,transparent_1px)] [background-size:88px_88px,144px_144px]" />
+      <div
+        className="pointer-events-none absolute inset-0 z-[2] transition-opacity duration-500"
+        style={{
+          opacity: pageAccentNode ? (selectedThemeNode ? 1 : 0.45) : 0,
+          background: 'radial-gradient(circle at 50% 50%, var(--table-accent-soft), transparent 34%), linear-gradient(135deg, var(--table-accent-wash), transparent 46%, var(--table-accent-wash))',
+          mixBlendMode: 'screen',
+        }}
+      />
+      <div
+        className="pointer-events-none fixed inset-x-0 top-0 z-[210] h-2 transition-opacity duration-500"
+        style={{
+          opacity: selectedThemeNode ? 1 : 0,
+          background: 'linear-gradient(90deg, transparent, var(--table-accent), var(--table-accent-rim), var(--table-accent), transparent)',
+          boxShadow: '0 0 28px var(--table-accent-rim)',
+        }}
+      />
 
       {/* Dev FPS overlay — alleen in development build */}
       <PerfStats />
 
       <ConnectionPill connected={connected} health={health} />
-      <RouteCommandPanel activeNode={activeRouteNode} onSelectNode={handleSelectMain} />
-      <FocusPreviewPanel routeNode={activeRouteNode} focusNode={panelFocusNode} progress={progress} />
+      <RouteCommandPanel activeNode={activeRouteNode} selectedNode={selectedThemeNode} onSelectNode={handleSelectMain} />
+      <FocusPreviewPanel routeNode={activeRouteNode} focusNode={panelFocusNode} progress={progress} themeSelected={Boolean(selectedThemeNode)} />
 
       {/* iXperium branding */}
       <motion.div
@@ -498,15 +564,15 @@ export function TableApp() {
       </AnimatePresence>
 
       {/* Main navigation view */}
-      <AnimatePresence mode="wait">
+      <AnimatePresence initial={false}>
         {navState.level === 'main' && (
           <motion.div
             key="main"
             className="absolute inset-0"
-            initial={{ opacity: 0, scale: 1.2 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={VIEW_TRANSITION}
           >
             {/* Title */}
             <motion.div
@@ -542,10 +608,10 @@ export function TableApp() {
           <motion.div
             key="submenu"
             className="absolute inset-0"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.2 }}
-            transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={VIEW_TRANSITION}
           >
             {/* Breadcrumb */}
             <motion.div
