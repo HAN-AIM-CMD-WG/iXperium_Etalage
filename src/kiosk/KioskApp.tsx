@@ -6,8 +6,11 @@ import { resolveNavigationState } from '../shared/navigation';
 import { INITIAL_NAVIGATION_STATE, type ConnectionHealth } from '../shared/protocol';
 import { DEFAULT_VISUAL_STYLE } from '../shared/visualStyle';
 import { useNavigationSocket } from '../shared/useNavigationSocket';
+// Idle-afbeelding: de iXperium Smart Industry illustratie uit de eigen
+// assets — de mediakaart toont altijd een echte afbeelding, ook zonder
+// actieve route/onderwerp.
+import smartIndustryIdleImg from '../assets/topics/smart_industry1.jpg';
 
-const VECTOR_INK = '#07185F';
 const VECTOR_CREAM = '#FFF2B8';
 const DETAIL_EXIT_EASE: [number, number, number, number] = [0.65, 0, 0.35, 1];
 const DETAIL_ACCEL_EASE: [number, number, number, number] = [0.72, 0, 0.96, 0.62];
@@ -340,7 +343,7 @@ const KioskBrand = memo(function KioskBrand() {
     >
       <div className="app-branding__mark kiosk-brand-mark h-12 w-12 rounded-[0.9rem] bg-gradient-to-br from-[#46B469] to-[#1E90FF] shadow-[0_16px_42px_rgba(70,180,105,0.24)]" />
       <div>
-        <h1 className="text-2xl font-black leading-7 tracking-normal text-white drop-shadow-lg">iXperium</h1>
+        <h1 className="text-2xl font-black leading-7 tracking-normal text-white">iXperium</h1>
         <p className="mt-1 text-xs font-semibold text-white/55">Smart Industry detailweergave</p>
       </div>
     </motion.div>
@@ -348,11 +351,11 @@ const KioskBrand = memo(function KioskBrand() {
 });
 
 /**
- * Mediakaart — Kurzgesagt "viewport"-kaart in de huisstijl van de applicatie:
- * dikke inkt-blauwe rand, offset-schaduw en een cream caption-balk ÓNDER het
- * beeld. De foto zelf is volledig schoon: geen filter, geen gradient-overlay,
- * geen blur-rand — gewoon de afbeelding zoals hij is. Zonder foto toont de
- * viewport het decoratieve drijvende kleurenveld.
+ * Mediakaart — frosted glass "viewport"-kaart: dun glas-randje, zachte
+ * diepte-schaduw en een glazen caption-balk ÓNDER het beeld. De foto zelf is
+ * volledig schoon: geen filter, geen gradient-overlay, geen blur over het
+ * beeld — gewoon de afbeelding zoals hij is. Zonder actieve route valt de
+ * kaart terug op de Smart Industry illustratie uit de eigen assets.
  */
 const KioskDetailPlanet = memo(function KioskDetailPlanet({
   node,
@@ -365,17 +368,14 @@ const KioskDetailPlanet = memo(function KioskDetailPlanet({
 }) {
   const style = useMemo(() => ({
     '--kiosk-accent': accentColor,
-    '--kiosk-accent-ink': mixHex(accentColor, VECTOR_INK, 0.46),
-    '--kiosk-accent-dark': mixHex(accentColor, VECTOR_INK, 0.52),
-    '--kiosk-accent-deep': mixHex(accentColor, '#2a0c54', 0.4),
-    '--kiosk-accent-warm': mixHex(accentColor, '#FFD400', 0.42),
     '--kiosk-accent-light': mixHex(accentColor, VECTOR_CREAM, 0.68),
-    '--kiosk-accent-glow': rgbaHex(accentColor, 0.68),
+    '--kiosk-accent-soft': rgbaHex(accentColor, 0.2),
+    '--kiosk-accent-glow': rgbaHex(accentColor, 0.5),
   }) as CSSProperties & Record<string, string>, [accentColor]);
 
   const title = node ? compactTitle(node.title) : 'iXperium';
   const subtitle = getPlanetMicroCopy(mode);
-  const image = node?.content?.image;
+  const image = node?.content?.image ?? smartIndustryIdleImg;
   const themeClass = node?.theme ? ` kiosk-detail-planet--theme-${node.theme}` : '';
   const enterDelay = mode === 'detail' ? 0.58 : 0;
   const exitY = typeof window === 'undefined' ? [0, 18, -1200] : [0, 18, -window.innerHeight * 1.32];
@@ -404,25 +404,13 @@ const KioskDetailPlanet = memo(function KioskDetailPlanet({
         : MEDIA_ENTER_TRANSITION}
     >
       <div className="kiosk-detail-planet__viewport">
-        {image ? (
-          <img
-            className="kiosk-detail-planet__image"
-            src={image}
-            alt={node?.title ?? 'iXperium Smart Industry'}
-            loading="eager"
-            draggable={false}
-          />
-        ) : (
-          <>
-            <span className="kiosk-detail-planet__field kiosk-detail-planet__field--one" />
-            <span className="kiosk-detail-planet__field kiosk-detail-planet__field--two" />
-            <span className="kiosk-detail-planet__field kiosk-detail-planet__field--three" />
-            <span className="kiosk-detail-planet__crater kiosk-detail-planet__crater--one" />
-            <span className="kiosk-detail-planet__crater kiosk-detail-planet__crater--two" />
-            <span className="kiosk-detail-planet__crater kiosk-detail-planet__crater--three" />
-            <span className="kiosk-detail-planet__shine" />
-          </>
-        )}
+        <img
+          className="kiosk-detail-planet__image"
+          src={image}
+          alt={node?.title ?? 'iXperium Smart Industry'}
+          loading="eager"
+          draggable={false}
+        />
       </div>
 
       <div className="kiosk-detail-planet__caption">
@@ -461,12 +449,10 @@ const KioskInfoPanel = memo(function KioskInfoPanel({
     <motion.div
       className="kiosk-detail-panel"
       style={{
-        // --panel-accent: gedonkerde variant voor tekst/dots op het cream
-        // paneel (lichte routekleuren zoals geel blijven zo leesbaar);
-        // --panel-badge: de pure routekleur voor het badge-vlak.
-        '--panel-accent': mixHex(accentColor, VECTOR_INK, 0.38),
-        '--panel-badge': accentColor,
-        '--panel-glow': rgbaHex(accentColor, 0.34),
+        // --panel-accent: opgelichte variant voor tekst/dots op het donkere
+        // glas-paneel (donkere routekleuren blijven zo leesbaar).
+        '--panel-accent': mixHex(accentColor, '#FFFFFF', 0.32),
+        '--panel-glow': rgbaHex(accentColor, 0.3),
       } as CSSProperties & Record<string, string>}
       initial={{ opacity: 0, x: 34, y: 46, scale: 0.955, rotate: 0.28 }}
       animate={{

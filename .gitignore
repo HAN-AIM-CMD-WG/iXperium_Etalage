@@ -2,3 +2,6 @@ node_modules/
 dist/
 dist-server/
 .DS_Store
+
+# graphify generated knowledge graph (derived output)
+graphify-out/

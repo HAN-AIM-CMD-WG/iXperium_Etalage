@@ -184,7 +184,7 @@ const RouteCommandPanel = memo(function RouteCommandPanel({
       <div className="flex flex-col gap-3">
         <p className="text-xs font-bold tracking-[0.24em] text-white/55">Routebord</p>
         <h2 className="text-[2.35rem] font-black leading-[0.98] tracking-normal text-white">
-          Kies een kennisroute.
+          Kies een kennisroute
         </h2>
         <p className="text-[0.96rem] leading-6 text-white/65">
           Draai de planeten rond de kern en tik op een domein om verdieping naar het kiosk-scherm te sturen.
@@ -495,7 +495,7 @@ export function TableApp() {
       >
         <div className="app-branding__mark h-11 w-11 rounded-[0.9rem] bg-gradient-to-br from-[#46B469] to-[#1E90FF] shadow-[0_16px_42px_rgba(70,180,105,0.24)]" />
         <div>
-          <h1 className="text-2xl font-black leading-7 tracking-normal text-white drop-shadow-lg">
+          <h1 className="text-2xl font-black leading-7 tracking-normal text-white">
             iXperium
           </h1>
           <p className="mt-1 text-xs font-semibold text-white/55">Smart Industry touchtafel</p>

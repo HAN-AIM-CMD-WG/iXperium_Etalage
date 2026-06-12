@@ -215,9 +215,9 @@ const ORBIT_RING_ROTATION_DEG = -20;
 
 /* ---------------- Theme crossfade stack ---------------- */
 
-interface CrossfadeEntry {
-  theme: string;
-  serial: number;
+interface CrossfadeLayers {
+  base: string;
+  incoming: string | null;
 }
 
 /**
@@ -229,13 +229,15 @@ interface CrossfadeEntry {
  * 60×/s gedurende de hele 1.8s transitie — en omdat het thema tijdens het
  * draaien continu wisselt was dit een quasi-permanente paint-belasting.
  *
- * Nu wordt elke laag per theme één keer gerasterd en faden we de nieuwe laag
- * met `opacity` (GPU-composited, geen repaint) over de oude heen. Eindbeeld is
- * identiek; halverwege is het een crossfade i.p.v. kleur-interpolatie — bij
- * exact overlappende geometrie visueel gelijkwaardig.
+ * Nu wordt elke laag per theme één keer gerasterd en fade't de nieuwe laag
+ * met `opacity` (GPU-composited, geen repaint) over de oude heen.
  *
- * Bij snelle opeenvolgende wissels stapelen maximaal 3 lagen; zodra de
- * bovenste volledig dekt worden onderliggende lagen opgeruimd.
+ * Wachtrij-semantiek: er is altijd precies één volledig dekkende basislaag
+ * en maximaal één invadende laag. Wisselt het thema terwijl er al een fade
+ * loopt, dan wordt de nieuwste wens onthouden en gestart zodra de lopende
+ * fade klaar is. Daardoor wordt er nooit een laag mid-fade weggegooid en is
+ * élke zichtbare verandering een vloeiende animatie — geen knippers of
+ * sprongen, hoe snel het thema ook wisselt.
  */
 function ThemeCrossfadeStack({
   themeKey,
@@ -248,40 +250,50 @@ function ThemeCrossfadeStack({
   style?: React.CSSProperties;
   renderLayer: (theme: string) => React.ReactNode;
 }) {
-  const [stack, setStack] = useState<CrossfadeEntry[]>(() => [{ theme: themeKey, serial: 0 }]);
-  const serialRef = useRef(0);
+  const [layers, setLayers] = useState<CrossfadeLayers>(() => ({ base: themeKey, incoming: null }));
+  const pendingRef = useRef<string | null>(null);
 
-  // Render-phase update: nieuwe theme-laag direct in deze render meenemen
-  // zodat er geen frame met verouderde kleuren commit.
-  let layers = stack;
-  if (stack[stack.length - 1].theme !== themeKey) {
-    serialRef.current += 1;
-    layers = [...stack.slice(-2), { theme: themeKey, serial: serialRef.current }];
-    setStack(layers);
+  const activeTarget = layers.incoming ?? layers.base;
+  if (themeKey === activeTarget) {
+    // De nieuwste wens is al (bijna) zichtbaar — eventuele oudere wens vervalt.
+    pendingRef.current = null;
+  } else if (!layers.incoming) {
+    // Render-phase update: fade direct starten zodat er geen frame met
+    // verouderde kleuren commit.
+    setLayers({ base: layers.base, incoming: themeKey });
+  } else {
+    // Er loopt al een fade — onthoud alleen de nieuwste wens.
+    pendingRef.current = themeKey;
   }
 
-  const handleLayerSettled = useCallback((serial: number) => {
-    // Laag `serial` dekt nu volledig — alles eronder is onzichtbaar en mag weg.
-    setStack((current) => {
-      const index = current.findIndex((entry) => entry.serial === serial);
-      return index > 0 ? current.slice(index) : current;
+  const handleIncomingSettled = useCallback(() => {
+    setLayers((current) => {
+      if (!current.incoming) return current;
+      const settled = current.incoming;
+      const next = pendingRef.current;
+      pendingRef.current = null;
+      if (next && next !== settled) {
+        return { base: settled, incoming: next };
+      }
+      return { base: settled, incoming: null };
     });
   }, []);
 
   return (
     <div className={className} style={style}>
-      {layers.map((entry) => (
+      <div className="absolute inset-0">{renderLayer(layers.base)}</div>
+      {layers.incoming && (
         <motion.div
-          key={entry.serial}
+          key={layers.incoming}
           className="absolute inset-0"
-          initial={entry.serial === 0 ? false : { opacity: 0 }}
+          initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={COLOR_TRANSITION}
-          onAnimationComplete={() => handleLayerSettled(entry.serial)}
+          onAnimationComplete={handleIncomingSettled}
         >
-          {renderLayer(entry.theme)}
+          {renderLayer(layers.incoming)}
         </motion.div>
-      ))}
+      )}
     </div>
   );
 }
@@ -495,116 +507,7 @@ function GalacticDisk({ themeKey, palette, diskSize, diskDots }: {
   );
 }
 
-/* ---------------- Cloud Cluster Nebulae ---------------- */
-
-type CloudPuff = { cx: number; cy: number; r: number };
-
-interface CloudSpec {
-  /** Overlappende cirkels die samen het wolk-silhouet vormen. */
-  puffs: CloudPuff[];
-  /** Afgeronde basisbalk — de klassieke vlakke cartoon-wolkenbodem. */
-  base: { x: number; y: number; w: number; h: number };
-  /** y-grens waaronder de wolk de diepere onderkleur krijgt. */
-  shadeY: number;
-  /** Kleine highlight-puffs bovenin (binnen het silhouet geclipt). */
-  highlights: CloudPuff[];
-  /** 4-puntige sparkles die los om de wolk zweven. */
-  sparkles: Array<{ x: number; y: number; s: number }>;
-}
-
-const CLOUD_OUTLINE = 5;
-
-/**
- * Vier wolk-varianten in een 320×180 viewBox. Het silhouet is een unie van
- * cirkels + basisbalk; de inkt-outline ontstaat door dezelfde vormen eerst
- * iets groter in inktkleur te tekenen (union-outline techniek). Twee-tonen
- * shading (licht boven, dieper onder) + highlight-puffs geven het de
- * Kurzgesagt-look die aansluit op de rest van de applicatie.
- */
-const CLOUD_VARIANTS: CloudSpec[] = [
-  // Variant A — brede wolk met hoge middenpuff.
-  {
-    puffs: [
-      { cx: 62, cy: 112, r: 30 },
-      { cx: 102, cy: 90, r: 42 },
-      { cx: 152, cy: 78, r: 50 },
-      { cx: 206, cy: 90, r: 42 },
-      { cx: 248, cy: 112, r: 30 },
-    ],
-    base: { x: 44, y: 102, w: 232, h: 38 },
-    shadeY: 106,
-    highlights: [
-      { cx: 94, cy: 76, r: 13 },
-      { cx: 132, cy: 58, r: 16 },
-      { cx: 172, cy: 52, r: 18 },
-    ],
-    sparkles: [
-      { x: 296, y: 58, s: 7 },
-      { x: 22, y: 70, s: 5 },
-    ],
-  },
-  // Variant B — compacte hoge bubble-cloud.
-  {
-    puffs: [
-      { cx: 98, cy: 108, r: 32 },
-      { cx: 138, cy: 76, r: 46 },
-      { cx: 186, cy: 94, r: 40 },
-      { cx: 224, cy: 116, r: 26 },
-    ],
-    base: { x: 78, y: 104, w: 168, h: 36 },
-    shadeY: 108,
-    highlights: [
-      { cx: 120, cy: 58, r: 14 },
-      { cx: 158, cy: 50, r: 16 },
-    ],
-    sparkles: [
-      { x: 258, y: 56, s: 6 },
-      { x: 64, y: 42, s: 4 },
-    ],
-  },
-  // Variant C — gestrekte komeetwolk.
-  {
-    puffs: [
-      { cx: 54, cy: 118, r: 24 },
-      { cx: 96, cy: 104, r: 34 },
-      { cx: 144, cy: 92, r: 44 },
-      { cx: 198, cy: 98, r: 38 },
-      { cx: 248, cy: 110, r: 28 },
-      { cx: 284, cy: 120, r: 18 },
-    ],
-    base: { x: 40, y: 110, w: 258, h: 30 },
-    shadeY: 112,
-    highlights: [
-      { cx: 128, cy: 66, r: 13 },
-      { cx: 164, cy: 60, r: 15 },
-      { cx: 206, cy: 74, r: 11 },
-    ],
-    sparkles: [
-      { x: 310, y: 78, s: 5 },
-      { x: 22, y: 90, s: 4 },
-    ],
-  },
-  // Variant D — dubbele bult.
-  {
-    puffs: [
-      { cx: 74, cy: 100, r: 36 },
-      { cx: 118, cy: 82, r: 42 },
-      { cx: 168, cy: 102, r: 34 },
-      { cx: 214, cy: 80, r: 40 },
-      { cx: 256, cy: 104, r: 30 },
-    ],
-    base: { x: 54, y: 102, w: 232, h: 38 },
-    shadeY: 106,
-    highlights: [
-      { cx: 98, cy: 64, r: 13 },
-      { cx: 196, cy: 58, r: 15 },
-    ],
-    sparkles: [
-      { x: 298, y: 134, s: 6 },
-      { x: 44, y: 52, s: 4 },
-    ],
-  },
-];
+/* ---------------- Nebulae ---------------- */
 
 /** 4-puntige ster (zelfde vorm als de twinkle-sterren in de backdrop). */
 function sparklePath(x: number, y: number, s: number) {
@@ -613,9 +516,144 @@ function sparklePath(x: number, y: number, s: number) {
 }
 
 /**
- * Rendert één wolk-cluster als statische SVG. Kleurwissels lopen via de
+ * Organische blob-vorm: punten rond een ellips met seeded radius-jitter,
+ * verbonden via een gesloten Catmull-Rom spline (omgezet naar cubic beziers).
+ * Deterministisch per seed → zelfde vorm elke render.
+ */
+function nebulaBlobPath(
+  seed: number,
+  cx: number,
+  cy: number,
+  rx: number,
+  ry: number,
+  pointCount = 10,
+  jitter = 0.34,
+): string {
+  const rand = seededRandom(seed);
+  const points: Array<[number, number]> = [];
+  for (let i = 0; i < pointCount; i += 1) {
+    const angle = (i / pointCount) * Math.PI * 2;
+    const radial = 1 - jitter * 0.5 + rand() * jitter;
+    points.push([
+      cx + Math.cos(angle) * rx * radial,
+      cy + Math.sin(angle) * ry * radial,
+    ]);
+  }
+
+  let d = `M ${points[0][0].toFixed(1)} ${points[0][1].toFixed(1)}`;
+  for (let i = 0; i < pointCount; i += 1) {
+    const p0 = points[(i - 1 + pointCount) % pointCount];
+    const p1 = points[i];
+    const p2 = points[(i + 1) % pointCount];
+    const p3 = points[(i + 2) % pointCount];
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+  }
+  return `${d} Z`;
+}
+
+interface NebulaSpec {
+  /** Paden voor de drie gaslagen, van buiten naar binnen. */
+  outerPath: string;
+  midPath: string;
+  corePath: string;
+  heartPath: string;
+  /** Sterretjes die ín het gas zweven. */
+  stars: Array<{ x: number; y: number; r: number }>;
+  sparkle: { x: number; y: number; s: number };
+}
+
+function buildNebulaSpec(
+  seed: number,
+  outer: [number, number, number, number],
+  mid: [number, number, number, number],
+  core: [number, number, number, number],
+  stars: Array<{ x: number; y: number; r: number }>,
+  sparkle: { x: number; y: number; s: number },
+): NebulaSpec {
+  const [ox, oy, orx, ory] = outer;
+  const [mx, my, mrx, mry] = mid;
+  const [kx, ky, krx, kry] = core;
+  return {
+    outerPath: nebulaBlobPath(seed, ox, oy, orx, ory, 11, 0.38),
+    midPath: nebulaBlobPath(seed + 17, mx, my, mrx, mry, 9, 0.34),
+    corePath: nebulaBlobPath(seed + 41, kx, ky, krx, kry, 8, 0.3),
+    heartPath: nebulaBlobPath(seed + 73, kx + krx * 0.12, ky - kry * 0.15, krx * 0.42, kry * 0.42, 7, 0.26),
+    stars,
+    sparkle,
+  };
+}
+
+/**
+ * Vier nebula-varianten in een 320×180 viewBox: gelaagde gaswolken (diepe
+ * buitenlaag → accent-middenlaag → lichte kern → bijna-witte "heart") met
+ * sterretjes in het gas. Geen outline — nebula's zijn gas, geen objecten;
+ * de Kurzgesagt-look komt van de vlakke, crisp gelaagde tinten.
+ */
+const NEBULA_VARIANTS: NebulaSpec[] = [
+  // Variant A — breed, licht hellend.
+  buildNebulaSpec(
+    101,
+    [160, 92, 142, 58],
+    [148, 88, 98, 42],
+    [176, 82, 54, 26],
+    [
+      { x: 86, y: 78, r: 2.4 },
+      { x: 124, y: 112, r: 1.7 },
+      { x: 206, y: 64, r: 2.1 },
+      { x: 238, y: 102, r: 1.5 },
+    ],
+    { x: 284, y: 52, s: 6 },
+  ),
+  // Variant B — compacter en ronder.
+  buildNebulaSpec(
+    211,
+    [156, 94, 118, 66],
+    [168, 90, 84, 48],
+    [148, 84, 48, 30],
+    [
+      { x: 100, y: 70, r: 2.2 },
+      { x: 196, y: 120, r: 1.8 },
+      { x: 214, y: 70, r: 1.5 },
+    ],
+    { x: 56, y: 44, s: 5 },
+  ),
+  // Variant C — lange sliert.
+  buildNebulaSpec(
+    307,
+    [160, 96, 150, 48],
+    [140, 92, 104, 36],
+    [188, 90, 60, 24],
+    [
+      { x: 70, y: 92, r: 1.9 },
+      { x: 142, y: 70, r: 2.3 },
+      { x: 232, y: 110, r: 1.6 },
+      { x: 268, y: 78, r: 1.9 },
+    ],
+    { x: 30, y: 130, s: 5 },
+  ),
+  // Variant D — gekanteld, kern rechtsboven.
+  buildNebulaSpec(
+    419,
+    [158, 90, 132, 62],
+    [172, 84, 92, 44],
+    [190, 74, 50, 26],
+    [
+      { x: 96, y: 110, r: 2.2 },
+      { x: 142, y: 60, r: 1.6 },
+      { x: 236, y: 96, r: 2 },
+    ],
+    { x: 44, y: 60, s: 6 },
+  ),
+];
+
+/**
+ * Rendert één nebula als statische SVG. Kleurwissels lopen via de
  * ThemeCrossfadeStack van het cluster (zie CapsuleStrip), dus binnen één
- * laag verandert hier nooit iets — geen per-frame raster.
+ * laag verandert hier nooit iets — geen per-frame raster, geen knippers.
  */
 function NebulaCloud({
   variant,
@@ -632,16 +670,8 @@ function NebulaCloud({
   rotate?: number;
   opacity?: number;
 }) {
-  const id = useId().replace(/:/g, '');
-  const clipId = `cloud-clip-${id}`;
-  const spec = CLOUD_VARIANTS[variant % CLOUD_VARIANTS.length];
+  const spec = NEBULA_VARIANTS[variant % NEBULA_VARIANTS.length];
   const height = (size / 320) * 180;
-  const { base } = spec;
-
-  const bodyFill = palette.capsuleHighlight;
-  const shadeFill = palette.capsuleBase;
-  const highlightFill = mixColor(palette.capsuleCore, { r: 255, g: 255, b: 255 }, 0.55, 0.92);
-  const baseOutlineRadius = (base.h + CLOUD_OUTLINE * 2) / 2;
 
   return (
     <svg
@@ -656,49 +686,17 @@ function NebulaCloud({
       }}
       aria-hidden
     >
-      <defs>
-        <clipPath id={clipId}>
-          {spec.puffs.map((puff, idx) => (
-            <circle key={idx} cx={puff.cx} cy={puff.cy} r={puff.r} />
-          ))}
-          <rect x={base.x} y={base.y} width={base.w} height={base.h} rx={base.h / 2} />
-        </clipPath>
-      </defs>
+      {/* Gaslagen: diep → accent → licht → heart. */}
+      <path d={spec.outerPath} fill={palette.capsuleBase} opacity="0.5" />
+      <path d={spec.midPath} fill={palette.capsuleAccent} opacity="0.55" />
+      <path d={spec.corePath} fill={palette.capsuleHighlight} opacity="0.7" />
+      <path d={spec.heartPath} fill={palette.capsuleCore} opacity="0.85" />
 
-      {/* 1. Inkt-outline: zelfde vormen, iets groter — rand om de hele unie. */}
-      <g fill={palette.ink}>
-        {spec.puffs.map((puff, idx) => (
-          <circle key={idx} cx={puff.cx} cy={puff.cy} r={puff.r + CLOUD_OUTLINE} />
-        ))}
-        <rect
-          x={base.x - CLOUD_OUTLINE}
-          y={base.y - CLOUD_OUTLINE}
-          width={base.w + CLOUD_OUTLINE * 2}
-          height={base.h + CLOUD_OUTLINE * 2}
-          rx={baseOutlineRadius}
-        />
-      </g>
-
-      {/* 2. Wolk-body in de lichte toon. */}
-      <g fill={bodyFill}>
-        {spec.puffs.map((puff, idx) => (
-          <circle key={idx} cx={puff.cx} cy={puff.cy} r={puff.r} />
-        ))}
-        <rect x={base.x} y={base.y} width={base.w} height={base.h} rx={base.h / 2} />
-      </g>
-
-      {/* 3. Diepere onderkant + highlight-puffs, geclipt op het silhouet. */}
-      <g clipPath={`url(#${clipId})`}>
-        <rect x="-10" y={spec.shadeY} width="340" height={190 - spec.shadeY} fill={shadeFill} opacity="0.85" />
-        {spec.highlights.map((puff, idx) => (
-          <circle key={idx} cx={puff.cx} cy={puff.cy} r={puff.r} fill={highlightFill} />
-        ))}
-      </g>
-
-      {/* 4. Zwevende sparkles in de kern-kleur. */}
-      {spec.sparkles.map((sparkle, idx) => (
-        <path key={idx} d={sparklePath(sparkle.x, sparkle.y, sparkle.s)} fill={palette.capsuleCore} opacity="0.9" />
+      {/* Sterretjes in het gas + één sparkle ernaast. */}
+      {spec.stars.map((star, idx) => (
+        <circle key={idx} cx={star.x} cy={star.y} r={star.r} fill={palette.starWhite} opacity="0.85" />
       ))}
+      <path d={sparklePath(spec.sparkle.x, spec.sparkle.y, spec.sparkle.s)} fill={palette.capsuleCore} opacity="0.9" />
     </svg>
   );
 }
@@ -1054,28 +1052,26 @@ function MiniPlanetRinged({ palette }: { palette: VectorPalette }) {
 
       {/* Ring — achterste helft (bovenlangs) */}
       <g transform="rotate(-16 110 110)">
-        <path d="M 8 110 A 102 30 0 0 1 212 110" fill="none" stroke={palette.ink} strokeWidth="17" strokeLinecap="round" />
         <path d="M 8 110 A 102 30 0 0 1 212 110" fill="none" stroke={palette.moonSecondary} strokeWidth="9" strokeLinecap="round" />
       </g>
 
       {/* Body */}
-      <circle cx="110" cy="110" r="76" fill={capFill} stroke={palette.ink} strokeWidth="7" />
+      <circle cx="110" cy="110" r="76" fill={capFill} />
       <g clipPath={`url(#${clipId})`}>
         {/* Basistoon + terminator-schaduw rechtsonder */}
         <circle cx="96" cy="96" r="88" fill={body} />
         <circle cx="158" cy="150" r="86" fill={shade} />
         {/* Kraters */}
-        <circle cx="84" cy="86" r="15" fill={craterFill} stroke={palette.ink} strokeWidth="5" />
-        <circle cx="128" cy="62" r="9" fill={craterFill} stroke={palette.ink} strokeWidth="4" />
-        <circle cx="68" cy="134" r="11" fill={craterFill} stroke={palette.ink} strokeWidth="4" />
-        <circle cx="138" cy="122" r="7" fill={shade} stroke={palette.ink} strokeWidth="4" />
+        <circle cx="84" cy="86" r="15" fill={craterFill} />
+        <circle cx="128" cy="62" r="9" fill={craterFill} />
+        <circle cx="68" cy="134" r="11" fill={craterFill} />
+        <circle cx="138" cy="122" r="7" fill={shade} />
       </g>
 
       {/* Ring — voorste helft (onderlangs), met klein maantje */}
       <g transform="rotate(-16 110 110)">
-        <path d="M 8 110 A 102 30 0 0 0 212 110" fill="none" stroke={palette.ink} strokeWidth="17" strokeLinecap="round" />
         <path d="M 8 110 A 102 30 0 0 0 212 110" fill="none" stroke={palette.moonSecondary} strokeWidth="9" strokeLinecap="round" />
-        <circle cx="194" cy="124" r="10" fill={palette.moonAccent} stroke={palette.ink} strokeWidth="5" />
+        <circle cx="194" cy="124" r="10" fill={palette.moonAccent} />
       </g>
     </svg>
   );
@@ -1106,19 +1102,19 @@ function MiniPlanetBanded({ palette }: { palette: VectorPalette }) {
       <circle cx="100" cy="112" r="72" fill="rgba(2, 8, 30, 0.32)" />
 
       {/* Body met lichtkap linksboven */}
-      <circle cx="100" cy="104" r="72" fill={body} stroke={palette.ink} strokeWidth="7" />
+      <circle cx="100" cy="104" r="72" fill={body} />
       <g clipPath={`url(#${clipId})`}>
         <circle cx="76" cy="76" r="74" fill={capFill} />
         {/* Wikkel-banden — randen lopen netjes tegen de bolrand dood */}
-        <rect x="6" y="62" width="188" height="24" rx="12" fill={palette.moonSecondary} stroke={palette.ink} strokeWidth="5" />
-        <rect x="14" y="100" width="180" height="18" rx="9" fill={palette.moonPrimary} stroke={palette.ink} strokeWidth="5" />
-        <rect x="2" y="132" width="196" height="15" rx="7.5" fill={lowBand} stroke={palette.ink} strokeWidth="4" />
+        <rect x="6" y="62" width="188" height="24" rx="12" fill={palette.moonSecondary} />
+        <rect x="14" y="100" width="180" height="18" rx="9" fill={palette.moonPrimary} />
+        <rect x="2" y="132" width="196" height="15" rx="7.5" fill={lowBand} />
         {/* Oppervlakte-spot */}
-        <circle cx="132" cy="92" r="9" fill={spotFill} stroke={palette.ink} strokeWidth="4" />
+        <circle cx="132" cy="92" r="9" fill={spotFill} />
       </g>
 
       {/* Los maantje rechtsboven */}
-      <circle cx="172" cy="36" r="11" fill={palette.moonPrimary} stroke={palette.ink} strokeWidth="5" />
+      <circle cx="172" cy="36" r="11" fill={palette.moonPrimary} />
       <circle cx="169" cy="34" r="3.5" fill={mixColor(palette.moonPrimary, inkRgb, 0.4, 1)} />
     </svg>
   );
@@ -1446,8 +1442,7 @@ export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
           className="kurzgesagt-central-planet"
           style={{
             background: centralPlanetPaint.body,
-            borderColor: palette.ink,
-            boxShadow: `0 14px 0 rgba(0,0,0,0.42), 0 0 64px ${centralPlanetPaint.glow}, 0 0 22px ${centralPlanetPaint.atmosphere}, inset -34px -12px 0 rgba(0,0,0,0.1)`,
+            boxShadow: `0 0 64px ${centralPlanetPaint.glow}, 0 0 22px ${centralPlanetPaint.atmosphere}, inset -34px -12px 0 rgba(0,0,0,0.1)`,
           }}
         >
           <div

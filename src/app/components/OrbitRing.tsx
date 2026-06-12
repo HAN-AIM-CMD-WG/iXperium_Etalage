@@ -32,7 +32,6 @@ const TAU = Math.PI * 2;
 const LABEL_FONT_FAMILY = 'Overpass, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 const MIN_LABEL_FONT_SIZE = 16;
 const MAX_LABEL_FONT_SIZE = 28;
-const VECTOR_INK = '#07185F';
 const VECTOR_CREAM = '#FFF2B8';
 const CENTRAL_LABEL_FILL = '#FFFFFF';
 const CENTRAL_LABEL_SHADOW = 'rgba(2, 6, 20, 0.94)';
@@ -1201,7 +1200,6 @@ function drawVectorPlanet(
 
   const isFront = layer === 'front';
   const layerOpacity = (isFront ? planet.opacity : planet.opacity * 0.54) * visibility;
-  const outlineWidth = clamp(planet.radius * 0.075, 3, 7);
   const color = planet.node.color;
   const radius = planet.radius;
   const surfacePhase = animTime * (0.11 + (seed % 7) * 0.008) + seed * 0.003;
@@ -1263,12 +1261,6 @@ function drawVectorPlanet(
     paintVectorPlanetSurface(context, radius, color, seed, animTime);
     context.restore();
   }
-
-  context.beginPath();
-  context.arc(planet.x, planet.y, radius, 0, TAU);
-  context.lineWidth = outlineWidth;
-  context.strokeStyle = VECTOR_INK;
-  context.stroke();
 
   context.save();
   context.lineCap = 'round';
