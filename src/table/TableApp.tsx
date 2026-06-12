@@ -1,5 +1,6 @@
 import { startTransition, useState, useCallback, useMemo, memo, useRef, type CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { ChevronLeft } from 'lucide-react';
 import { contentData, type ContentNode } from '../shared/content';
 import type { ConnectionHealth } from '../shared/protocol';
 import { DEFAULT_VISUAL_STYLE } from '../shared/visualStyle';
@@ -246,7 +247,7 @@ const FocusPreviewPanel = memo(function FocusPreviewPanel({
     <motion.aside
       layout
       transition={PANEL_LAYOUT_TRANSITION}
-      className="pointer-events-none fixed right-8 top-[16vh] z-[90] flex max-h-[74vh] w-[min(24vw,21rem)] max-w-[21rem] flex-col gap-4 rounded-[1.875rem] border p-5 text-white shadow-[0_24px_90px_rgba(0,0,0,0.30)] backdrop-blur-xl transition-[background,border-color,box-shadow] duration-500 max-[1120px]:hidden"
+      className={`pointer-events-none flex w-full flex-col gap-4 rounded-[1.875rem] border p-5 text-white shadow-[0_24px_90px_rgba(0,0,0,0.30)] backdrop-blur-xl transition-[background,border-color,box-shadow] duration-500 ${themeSelected ? 'max-h-[calc(74vh-5.75rem)]' : 'max-h-[74vh]'}`}
       style={getThemePanelStyle(routeNode, themeSelected)}
     >
       {themeSelected && (
@@ -319,6 +320,78 @@ const FocusPreviewPanel = memo(function FocusPreviewPanel({
         )}
       </div>
     </motion.aside>
+  );
+});
+
+const BackToRoutesButton = memo(function BackToRoutesButton({
+  node,
+  onBack,
+}: {
+  node: ContentNode;
+  onBack: () => void;
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onBack}
+      className="pointer-events-auto relative flex min-h-[4.5rem] w-full items-center gap-3 overflow-hidden rounded-[1.35rem] border-4 border-[#07185f] bg-[#fff2b8] px-4 py-3 text-left text-[#07185f] shadow-[0_8px_0_rgba(7,24,95,0.96),0_18px_48px_rgba(0,0,0,0.34)] transition-transform hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/75"
+      style={{
+        boxShadow: `0 8px 0 rgba(7,24,95,0.96), 0 0 34px ${node.color}aa, 0 18px 48px rgba(0,0,0,0.34)`,
+      }}
+      initial={{ opacity: 0, y: -8, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -6, scale: 0.98 }}
+      transition={{ duration: 0.26, ease: PANEL_LAYOUT_EASE }}
+      whileTap={{ scale: 0.97, y: 2 }}
+    >
+      <span
+        className="pointer-events-none absolute inset-x-4 top-2 h-1.5 rounded-full"
+        style={{
+          background: `linear-gradient(90deg, ${node.color}, ${pastel(node.color)}, ${node.color})`,
+          boxShadow: `0 0 16px ${node.color}aa`,
+        }}
+      />
+      <span className="relative z-10 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[0.9rem] bg-[#07185f] text-[#fff2b8] shadow-[0_4px_0_rgba(7,24,95,0.35)]">
+        <ChevronLeft className="h-7 w-7" strokeWidth={3.5} />
+      </span>
+      <span className="relative z-10 min-w-0 text-[1.02rem] font-black leading-[1.06] tracking-[0.035em]">
+        terug naar kennisroutes
+      </span>
+    </motion.button>
+  );
+});
+
+const RightPanelStack = memo(function RightPanelStack({
+  routeNode,
+  focusNode,
+  progress,
+  selectedNode,
+  onBack,
+}: {
+  routeNode: ContentNode;
+  focusNode: ContentNode;
+  progress: number;
+  selectedNode: ContentNode | null;
+  onBack: () => void;
+}) {
+  return (
+    <div className="pointer-events-none fixed right-8 top-[16vh] z-[90] flex w-[min(24vw,21rem)] max-w-[21rem] flex-col gap-3 max-[1120px]:hidden">
+      <FocusPreviewPanel
+        routeNode={routeNode}
+        focusNode={focusNode}
+        progress={progress}
+        themeSelected={Boolean(selectedNode)}
+      />
+      <AnimatePresence initial={false}>
+        {selectedNode && (
+          <BackToRoutesButton
+            key={selectedNode.id}
+            node={selectedNode}
+            onBack={onBack}
+          />
+        )}
+      </AnimatePresence>
+    </div>
   );
 });
 
@@ -518,7 +591,13 @@ export function TableApp() {
 
       <ConnectionPill connected={connected} health={health} />
       <RouteCommandPanel activeNode={activeRouteNode} onSelectNode={handleSelectMain} />
-      <FocusPreviewPanel routeNode={activeRouteNode} focusNode={panelFocusNode} progress={progress} themeSelected={Boolean(selectedThemeNode)} />
+      <RightPanelStack
+        routeNode={activeRouteNode}
+        focusNode={panelFocusNode}
+        progress={progress}
+        selectedNode={selectedThemeNode}
+        onBack={handleHome}
+      />
 
       {/* iXperium branding */}
       <motion.div
@@ -615,13 +694,12 @@ export function TableApp() {
               </h2>
             </motion.div>
 
-            {/* Center planet — met terug-knop boven de titel */}
+            {/* Center planet */}
             <Planet
               node={navState.selectedMain}
               angle={0}
               isCenter
               visualStyle={visualStyle}
-              onBack={handleHome}
             />
 
             {/* Submenu orbit */}

@@ -1,6 +1,5 @@
 import { motion } from 'motion/react';
 import { memo, useMemo, type CSSProperties } from 'react';
-import { ChevronLeft } from 'lucide-react';
 import { ContentNode } from '../data/content';
 import { ease } from '../motion/easing';
 import {
@@ -25,8 +24,6 @@ interface PlanetProps {
   angle: number;
   isCenter?: boolean;
   onSelect?: () => void;
-  /** Terug-knop bovenaan de centrum-planeet (alleen relevant als isCenter). */
-  onBack?: () => void;
   radiusX?: number;
   radiusY?: number;
   floatDelay?: number;
@@ -38,7 +35,6 @@ export const Planet = memo(function Planet({
   angle,
   isCenter = false,
   onSelect,
-  onBack,
   radiusX = 400,
   radiusY = 200,
   floatDelay = 0,
@@ -77,27 +73,6 @@ export const Planet = memo(function Planet({
             className="central-planet-label relative z-10 w-[min(18.5rem,42vw)] text-center"
             style={labelStyle}
           >
-            {/* Terug-knop — boven de titel op de planeet. Vervangt de oude
-                back-knop linksboven. pointer-events-auto omdat de planeet zelf
-                pointer-events-none is. */}
-            {onBack && (
-              <motion.button
-                type="button"
-                onClick={onBack}
-                className="pointer-events-auto mx-auto mb-5 flex items-center gap-3 rounded-[1.05rem] border-4 border-[#07185f] bg-[#fff2b8] px-6 py-3.5 text-lg font-black leading-none tracking-normal text-[#07185f] shadow-[0_8px_0_rgba(7,24,95,0.92),0_18px_34px_rgba(0,0,0,0.32)] transition-transform hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70"
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.4 }}
-                whileTap={{ scale: 0.96, y: 2 }}
-                style={{
-                  boxShadow: `0 8px 0 rgba(7,24,95,0.92), 0 0 30px ${node.color}88, 0 18px 34px rgba(0,0,0,0.32)`,
-                }}
-              >
-                <ChevronLeft className="h-7 w-7" strokeWidth={3.5} />
-                <span>Terug</span>
-              </motion.button>
-            )}
-
             {/* Thema-accent puls — bovenaan, glowend in de routekleur */}
             <motion.div
               className="mx-auto h-[7px] w-[7px] rounded-full"

@@ -460,8 +460,8 @@ function getLabelCandidates(text: string) {
 }
 
 function setLabelFont(context: CanvasRenderingContext2D, fontSize: number) {
-  context.font = `900 ${fontSize}px ${LABEL_FONT_FAMILY}`;
-  context.letterSpacing = `${(-0.025 * fontSize).toFixed(2)}px`;
+  context.font = `820 ${fontSize}px ${LABEL_FONT_FAMILY}`;
+  context.letterSpacing = `${(0.045 * fontSize).toFixed(2)}px`;
 }
 
 function truncateToWidth(context: CanvasRenderingContext2D, text: string, maxWidth: number) {
@@ -633,8 +633,8 @@ function drawCentralStyleLabelLine(
 ) {
   const shadowX = clamp(fontSize * 0.05, 0.8, 2.2);
   const shadowY = clamp(fontSize * 0.07, 1.1, 2.8);
-  const outlineWidth = clamp(fontSize * 0.105, 1.6, 3.2);
-  const whiteRimWidth = clamp(fontSize * 0.08, 1.2, 2.4);
+  const outlineWidth = clamp(fontSize * 0.085, 1.35, 2.7);
+  const whiteRimWidth = clamp(fontSize * 0.06, 1, 2);
 
   context.save();
   setLabelFont(context, fontSize);
