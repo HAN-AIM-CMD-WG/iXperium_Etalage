@@ -10,23 +10,28 @@ import { useNavigationSocket } from '../shared/useNavigationSocket';
 // assets — de mediakaart toont altijd een echte afbeelding, ook zonder
 // actieve route/onderwerp.
 import smartIndustryIdleImg from '../assets/topics/smart_industry1.jpg';
+// Witte "Smart Industry" wordmark — hero-banner bovenaan het kioskscherm.
+import smartIndustryWordmarkUrl from '../../zooi/Smart-Industry-wit.png';
 
 const VECTOR_CREAM = '#FFF2B8';
 const DETAIL_EXIT_EASE: [number, number, number, number] = [0.65, 0, 0.35, 1];
-const DETAIL_ACCEL_EASE: [number, number, number, number] = [0.72, 0, 0.96, 0.62];
+const DETAIL_ACCEL_EASE: [number, number, number, number] = [0.7, 0, 0.84, 0.4];
 const DETAIL_ENTER_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
-const MEDIA_ENTER_TRANSITION = { duration: 1.02, times: [0, 0.66, 1], ease: DETAIL_ENTER_EASE };
-const INFO_ENTER_TRANSITION = { duration: 1.08, times: [0, 0.62, 1], ease: DETAIL_ENTER_EASE, delay: 0.12 };
+// Snellere, strakkere detail-transities. De keyframe-overshoots blijven
+// (subtiele "settle"-beweging) maar de doorlooptijden zijn ~40% korter zodat
+// een routewissel meteen leest i.p.v. ~1s na te slepen.
+const MEDIA_ENTER_TRANSITION = { duration: 0.62, times: [0, 0.64, 1], ease: DETAIL_ENTER_EASE };
+const INFO_ENTER_TRANSITION = { duration: 0.66, times: [0, 0.6, 1], ease: DETAIL_ENTER_EASE, delay: 0.08 };
 const MEDIA_EXIT_TRANSITION = {
-  duration: 1.08,
-  times: [0, 0.15, 1],
+  duration: 0.56,
+  times: [0, 0.18, 1],
   ease: DETAIL_ACCEL_EASE,
 };
 const INFO_EXIT_TRANSITION = {
-  duration: 1.16,
-  times: [0, 0.16, 1],
+  duration: 0.6,
+  times: [0, 0.2, 1],
   ease: DETAIL_ACCEL_EASE,
-  delay: 0.08,
+  delay: 0.05,
 };
 
 const themeCopy: Record<string, string> = {
@@ -333,20 +338,24 @@ const StatusIndicator = memo(function StatusIndicator({
   );
 });
 
-const KioskBrand = memo(function KioskBrand() {
+/**
+ * Hero-banner bovenaan het scherm: de witte "Smart Industry" wordmark,
+ * horizontaal gecentreerd. `x: '-50%'` blijft in de transform staan terwijl
+ * motion alleen de `y` animeert, zodat de centrering niet wegvalt tijdens de
+ * intro-slide.
+ */
+const KioskTopWordmark = memo(function KioskTopWordmark() {
   return (
-    <motion.div
-      className="app-branding fixed left-8 top-8 z-[220] flex items-center gap-4 text-left"
-      initial={{ opacity: 0, y: -18 }}
+    <motion.img
+      src={smartIndustryWordmarkUrl}
+      alt="Smart Industry"
+      className="kiosk-top-wordmark fixed left-1/2 top-9 z-[210]"
+      style={{ x: '-50%' }}
+      draggable={false}
+      initial={{ opacity: 0, y: -14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.16 }}
-    >
-      <div className="app-branding__mark kiosk-brand-mark h-12 w-12 rounded-[0.9rem] bg-gradient-to-br from-[#46B469] to-[#1E90FF] shadow-[0_16px_42px_rgba(70,180,105,0.24)]" />
-      <div>
-        <h1 className="text-2xl font-black leading-7 tracking-normal text-white">iXperium</h1>
-        <p className="mt-1 text-xs font-semibold text-white/55">Smart Industry detailweergave</p>
-      </div>
-    </motion.div>
+      transition={{ delay: 0.1, duration: 0.5, ease: DETAIL_ENTER_EASE }}
+    />
   );
 });
 
@@ -377,7 +386,8 @@ const KioskDetailPlanet = memo(function KioskDetailPlanet({
   const subtitle = getPlanetMicroCopy(mode);
   const image = node?.content?.image ?? smartIndustryIdleImg;
   const themeClass = node?.theme ? ` kiosk-detail-planet--theme-${node.theme}` : '';
-  const enterDelay = mode === 'detail' ? 0.58 : 0;
+  // Synchroon met de versnelde handoff-rise (delay 0.32).
+  const enterDelay = mode === 'detail' ? 0.34 : 0;
   const exitY = typeof window === 'undefined' ? [0, 18, -1200] : [0, 18, -window.innerHeight * 1.32];
 
   return (
@@ -442,7 +452,7 @@ const KioskInfoPanel = memo(function KioskInfoPanel({
   const highlights = getHighlights(node);
   const applications = getApplications(node);
   const sourceLabel = node?.content?.sourceLabel ?? 'Projectdocument iXperium kiosk UI';
-  const enterDelay = (mode === 'detail' ? 0.58 : 0) + INFO_ENTER_TRANSITION.delay;
+  const enterDelay = (mode === 'detail' ? 0.34 : 0) + INFO_ENTER_TRANSITION.delay;
   const exitY = typeof window === 'undefined' ? [0, 24, -1160] : [0, 24, -window.innerHeight * 1.28];
 
   return (
@@ -554,10 +564,12 @@ const KioskHandoffEntry = memo(function KioskHandoffEntry({
       initial={{ y: belowY, scale: 0.55, opacity: 0 }}
       animate={{ y: centerY, scale: 1, opacity: [0, 1, 1, 0] }}
       transition={{
-        // ~0.5s delay: begint als de tafel-planeet net het scherm verlaat.
-        y: { duration: 1.08, ease: DETAIL_EXIT_EASE, delay: 0.5 },
-        scale: { duration: 1.08, ease: DETAIL_EXIT_EASE, delay: 0.5 },
-        opacity: { duration: 1.18, times: [0, 0.2, 0.74, 1], ease: DETAIL_EXIT_EASE, delay: 0.5 },
+        // ~0.32s delay: begint als de tafel-planeet net het scherm verlaat.
+        // Snellere rise (0.74s) zodat de handoff strak aansluit op de
+        // detailpagina die eronder uitklapt.
+        y: { duration: 0.74, ease: DETAIL_EXIT_EASE, delay: 0.32 },
+        scale: { duration: 0.74, ease: DETAIL_EXIT_EASE, delay: 0.32 },
+        opacity: { duration: 0.82, times: [0, 0.22, 0.74, 1], ease: DETAIL_EXIT_EASE, delay: 0.32 },
       }}
       onAnimationComplete={onComplete}
     >
@@ -637,7 +649,7 @@ export function KioskApp() {
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_50%_43%,rgba(5,8,23,0.04),rgba(5,8,23,0.30)_48%,rgba(5,8,23,0.72)_100%)]" />
 
       <PerfStats />
-      <KioskBrand />
+      <KioskTopWordmark />
       <StatusIndicator connected={connected} health={health} />
 
       {/* Cross-screen handoff — dezelfde planeet rijst van onder op tot het midden. */}
@@ -657,7 +669,7 @@ export function KioskApp() {
           className="kiosk-detail-layout"
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.48, ease: DETAIL_ENTER_EASE }}
+          transition={{ duration: 0.4, ease: DETAIL_ENTER_EASE }}
         >
           <div
             className="kiosk-detail-planet-zone"

@@ -1139,7 +1139,7 @@
   position: absolute;
   inset: -7%;
   transform-origin: center;
-  animation: kiosk-nebula-camera 42s ease-in-out infinite;
+  animation: kiosk-nebula-camera 32s ease-in-out infinite;
   will-change: transform;
 }
 
@@ -1161,23 +1161,23 @@
 
 .kiosk-nebula-layer--primary {
   will-change: transform, opacity;
-  animation: kiosk-nebula-drift-primary 34s ease-in-out infinite;
+  animation: kiosk-nebula-drift-primary 25s ease-in-out infinite;
 }
 
 .kiosk-nebula-layer--secondary {
   will-change: transform, opacity;
-  animation: kiosk-nebula-drift-secondary 46s ease-in-out infinite;
+  animation: kiosk-nebula-drift-secondary 34s ease-in-out infinite;
 }
 
 .kiosk-nebula-layer--pillars {
   will-change: transform;
-  animation: kiosk-nebula-pillar-drift 38s ease-in-out infinite;
+  animation: kiosk-nebula-pillar-drift 28s ease-in-out infinite;
 }
 
 .kiosk-nebula-layer--sparkles {
   fill: rgba(255, 255, 255, 0.58);
   will-change: transform, opacity;
-  animation: kiosk-nebula-sparkle-drift 24s ease-in-out infinite;
+  animation: kiosk-nebula-sparkle-drift 18s ease-in-out infinite;
 }
 
 .kiosk-nebula-dust-lane {
@@ -1219,7 +1219,7 @@
   border-radius: 50%;
   background: #ffffff;
   opacity: 0.55;
-  animation: kiosk-nebula-star-pulse 5.6s ease-in-out infinite;
+  animation: kiosk-nebula-star-pulse 4.2s ease-in-out infinite;
   will-change: transform, opacity;
 }
 
@@ -1229,6 +1229,17 @@
 
 .kiosk-nebula-stars .kiosk-nebula-star:nth-child(5n) {
   background: var(--nebula-accent-warm, #ffd400);
+}
+
+/* Hero-wordmark bovenaan: witte "Smart Industry" PNG, gecentreerd. Breedte
+   schaalt mee maar blijft tussen de brand-pill (links) en status-pill (rechts)
+   weg. pointer-events uit zodat hij niets blokkeert. */
+.kiosk-top-wordmark {
+  width: clamp(17rem, 30vw, 38rem);
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 6px 22px rgba(0, 0, 0, 0.4));
 }
 
 .kiosk-detail-layout {
@@ -1570,27 +1581,6 @@
   font-family: var(--ixp-font-body);
 }
 
-[data-visual-style='kurzgesagt'].kiosk-detail-shell .app-branding h1 {
-  color: #ffffff;
-  text-shadow: none;
-}
-
-[data-visual-style='kurzgesagt'].kiosk-detail-shell .app-branding p {
-  color: rgba(255, 255, 255, 0.55);
-  text-shadow: none;
-}
-
-[data-visual-style='kurzgesagt'].kiosk-detail-shell .app-branding__mark {
-  border: 0;
-  background: linear-gradient(135deg, #46b469, #1e90ff);
-  box-shadow: 0 16px 42px rgba(70, 180, 105, 0.24);
-}
-
-[data-visual-style='kurzgesagt'].kiosk-detail-shell .app-branding__mark::before,
-[data-visual-style='kurzgesagt'].kiosk-detail-shell .app-branding__mark::after {
-  content: none;
-}
-
 @keyframes kiosk-nebula-camera {
   0%,
   100% {
@@ -1676,6 +1666,12 @@
 }
 
 @media (max-width: 760px) {
+  /* Te smal voor een gecentreerde hero-wordmark naast de corner-pills; de
+     corner-brand (linksboven) dekt de branding daar al af. */
+  .kiosk-top-wordmark {
+    display: none;
+  }
+
   [data-visual-style='kurzgesagt'] .visual-style-toggle {
     left: 1rem;
     bottom: 1rem;
