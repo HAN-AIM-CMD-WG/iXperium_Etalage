@@ -93,6 +93,10 @@ function pastel(hex: string) {
   return mixHex(hex, '#FFFFFF', 0.5);
 }
 
+function routeSwatchColor(hex: string) {
+  return mixHex(hex, '#FFFFFF', 0.18);
+}
+
 /**
  * Centrale planeet — DOM laag.
  *
@@ -206,7 +210,7 @@ const RouteCommandPanel = memo(function RouteCommandPanel({
             >
               <span
                 className="h-11 w-11 flex-shrink-0 rounded-[0.875rem]"
-                style={{ backgroundColor: pastel(node.color) }}
+                style={{ backgroundColor: routeSwatchColor(node.color) }}
               />
               <span className="min-w-0">
                 <span className="block text-[0.98rem] font-extrabold leading-5 text-white">
