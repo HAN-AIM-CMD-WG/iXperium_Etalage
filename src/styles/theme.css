@@ -320,7 +320,8 @@
 
 .kurzgesagt-backdrop {
   color: #ffffff;
-  contain: paint;
+  contain: layout style paint;
+  isolation: isolate;
   transform: translateZ(0);
   backface-visibility: hidden;
 }
@@ -384,6 +385,35 @@
 
 .kurzgesagt-shooting-star__head {
   transition: box-shadow 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-render-profile='chromium-linux'] .kurzgesagt-disk-dot,
+[data-render-profile='chromium-linux'] .kurzgesagt-twinkle-star__shape,
+[data-render-profile='chromium-linux'] .kurzgesagt-twinkle-star__glow,
+[data-render-profile='chromium-linux'] .kurzgesagt-pulse-dot,
+[data-render-profile='chromium-linux'] .kurzgesagt-shooting-star__tail,
+[data-render-profile='chromium-linux'] .kurzgesagt-shooting-star__head,
+[data-render-profile='chromium-linux'] .kurzgesagt-central-planet,
+[data-render-profile='chromium-linux'] .kurzgesagt-central-planet__field,
+[data-render-profile='chromium-linux'] .kurzgesagt-central-planet__crater,
+[data-render-profile='chromium-linux'] .kurzgesagt-central-planet__atmosphere,
+[data-render-profile='chromium-linux'] .kurzgesagt-central-planet__ring {
+  transition: none !important;
+}
+
+[data-render-profile='chromium-linux'] .backdrop-blur-xl,
+[data-render-profile='chromium-linux'] .backdrop-blur-md,
+[data-render-profile='chromium-linux'] .kiosk-detail-panel,
+[data-render-profile='chromium-linux'] .kiosk-detail-planet__caption,
+[data-render-profile='chromium-linux'].kiosk-detail-shell .connection-pill {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+[data-render-profile='chromium-linux'] .kiosk-detail-panel,
+[data-render-profile='chromium-linux'] .kiosk-detail-planet,
+[data-render-profile='chromium-linux'] .kiosk-detail-planet__caption {
+  transform-style: flat;
 }
 
 .kurzgesagt-nebula-strip__track {
@@ -640,9 +670,10 @@
 .kg-energy-planet line,
 .kg-energy-planet path,
 .kg-energy-planet polygon {
-  transition:
-    fill 1.8s cubic-bezier(0.22, 1, 0.36, 1),
-    stroke 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Kleurwissels lopen via een opacity-crossfade van de hele planeetlaag.
+     Fill/stroke transitions op nested SVG-shapes forceerden op Linux/Chromium
+     per frame re-rastering van de planeet tijdens routewissels. */
+  transition: none;
 }
 
 .kg-energy-planet__layer {

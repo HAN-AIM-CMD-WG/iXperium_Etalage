@@ -5,6 +5,7 @@ import { contentData, type ContentNode } from '../shared/content';
 import type { ConnectionHealth } from '../shared/protocol';
 import { DEFAULT_VISUAL_STYLE } from '../shared/visualStyle';
 import { useNavigationSocket } from '../shared/useNavigationSocket';
+import { useRenderProfile } from '../shared/renderProfile';
 import { Planet } from '../app/components/Planet';
 import { OrbitRing, type PlanetSelectOrigin } from '../app/components/OrbitRing';
 import { ContentView } from '../app/components/ContentView';
@@ -415,6 +416,7 @@ export function TableApp() {
   const focusThrottleRef = useRef(0);
   const lastPreviewFocusNodeIdRef = useRef<string | null>(null);
   const visualStyle = DEFAULT_VISUAL_STYLE;
+  const renderProfile = useRenderProfile();
 
   const handleSelectMain = useCallback((node: ContentNode, origin?: PlanetSelectOrigin) => {
     // Route → centrum: laat de planeet naar het midden vliegen en commit
@@ -563,6 +565,7 @@ export function TableApp() {
       className="relative isolate size-full min-h-screen overflow-hidden bg-[#071016] text-white select-none"
       data-visual-style={visualStyle}
       data-theme-selected={selectedThemeNode ? 'true' : 'false'}
+      data-render-profile={renderProfile}
       style={pageAccentStyle}
     >
       {/* Vector scene layer. Pointer-events zijn uitgeschakeld. */}

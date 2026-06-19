@@ -6,6 +6,7 @@ import { resolveNavigationState } from '../shared/navigation';
 import { INITIAL_NAVIGATION_STATE, type ConnectionHealth } from '../shared/protocol';
 import { DEFAULT_VISUAL_STYLE } from '../shared/visualStyle';
 import { useNavigationSocket } from '../shared/useNavigationSocket';
+import { useRenderProfile } from '../shared/renderProfile';
 // Idle-afbeelding: de iXperium Smart Industry illustratie uit de eigen
 // assets — de mediakaart toont altijd een echte afbeelding, ook zonder
 // actieve route/onderwerp.
@@ -613,6 +614,7 @@ export function KioskApp() {
   const activeTheme = displayNode?.theme ?? navigationState.theme ?? resolvedState.theme;
   const accentColor = displayNode?.color ?? parentNode?.color ?? '#46B469';
   const visualStyle = DEFAULT_VISUAL_STYLE;
+  const renderProfile = useRenderProfile();
 
   const mode: DisplayMode = resolvedState.subNode
     ? 'detail'
@@ -644,6 +646,7 @@ export function KioskApp() {
     <div
       className="kiosk-detail-shell relative isolate size-full min-h-screen overflow-hidden bg-[#071016] text-white"
       data-visual-style={visualStyle}
+      data-render-profile={renderProfile}
     >
       <KioskNebulaBackdrop accentColor={accentColor} />
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_50%_43%,rgba(5,8,23,0.04),rgba(5,8,23,0.30)_48%,rgba(5,8,23,0.72)_100%)]" />

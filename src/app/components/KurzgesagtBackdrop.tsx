@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useId, useMemo, useRef, useState } from 'react';
 import { ease } from '../motion/easing';
 
 interface KurzgesagtBackdropProps {
@@ -272,23 +272,35 @@ function ThemeCrossfadeStack({
   const [layers, setLayers] = useState<CrossfadeLayers>(() => ({ base: themeKey, incoming: null, target: 1 }));
   const { base, incoming, target } = layers;
 
-  if (themeKey === base) {
-    // Basis moet weer zichtbaar worden. Fade't er nog iets in? Keer het om.
-    if (incoming !== null && target !== 0) {
-      setLayers({ base, incoming, target: 0 });
-    }
-  } else if (incoming === themeKey) {
-    // (Weer) onderweg naar themeKey — zorg dat we infaden i.p.v. uitfaden.
-    if (target !== 1) {
-      setLayers({ base, incoming, target: 1 });
-    }
-  } else if (incoming === null) {
-    setLayers({ base, incoming: themeKey, target: 1 });
-  } else {
-    // Derde thema tijdens een lopende fade: commit de deels-zichtbare laag als
-    // nieuwe basis en fade het nieuwste thema in.
-    setLayers({ base: incoming, incoming: themeKey, target: 1 });
-  }
+  useLayoutEffect(() => {
+    setLayers((current) => {
+      const { base: currentBase, incoming: currentIncoming, target: currentTarget } = current;
+
+      if (themeKey === currentBase) {
+        // Basis moet weer zichtbaar worden. Fade't er nog iets in? Keer het om.
+        if (currentIncoming !== null && currentTarget !== 0) {
+          return { base: currentBase, incoming: currentIncoming, target: 0 };
+        }
+        return current;
+      }
+
+      if (currentIncoming === themeKey) {
+        // (Weer) onderweg naar themeKey — zorg dat we infaden i.p.v. uitfaden.
+        if (currentTarget !== 1) {
+          return { base: currentBase, incoming: currentIncoming, target: 1 };
+        }
+        return current;
+      }
+
+      if (currentIncoming === null) {
+        return { base: currentBase, incoming: themeKey, target: 1 };
+      }
+
+      // Derde thema tijdens een lopende fade: commit de deels-zichtbare laag als
+      // nieuwe basis en fade het nieuwste thema in.
+      return { base: currentIncoming, incoming: themeKey, target: 1 };
+    });
+  }, [themeKey]);
 
   const handleSettled = useCallback(() => {
     setLayers((current) => {
@@ -1602,7 +1614,23 @@ export const KurzgesagtBackdrop = memo(function KurzgesagtBackdrop({
             klassieke ontwerp blijft beschikbaar via CENTRAL_PLANET_DESIGN
             of ?centralPlanet=classic. */}
       {showCentralPlanet && !isKiosk && CENTRAL_PLANET_DESIGN === 'energy' && (
-        <EnergyCentralPlanet planetColor={planetColor} accentColor={palette.planetBandCool} />
+        <ThemeCrossfadeStack
+          themeKey={`${themeKey}|${planetColor}`}
+          className="absolute inset-0"
+          renderLayer={(layerKey) => {
+            const separatorIndex = layerKey.indexOf('|');
+            const layerTheme = separatorIndex >= 0 ? layerKey.slice(0, separatorIndex) : themeKey;
+            const layerPlanetColor = separatorIndex >= 0 ? layerKey.slice(separatorIndex + 1) : planetColor;
+            const layerPalette = getPalette(layerTheme);
+
+            return (
+              <EnergyCentralPlanet
+                planetColor={layerPlanetColor}
+                accentColor={layerPalette.planetBandCool}
+              />
+            );
+          }}
+        />
       )}
       {showCentralPlanet && !isKiosk && CENTRAL_PLANET_DESIGN === 'classic' && (
         <div
