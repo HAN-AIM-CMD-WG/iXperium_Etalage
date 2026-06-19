@@ -209,8 +209,10 @@ function getPalette(theme: string) {
 }
 
 // Kant-en-klare motion transition voor elke palette crossfade.
-// Lang genoeg dat het zichtbaar is, kort genoeg om snel te voelen.
-const COLOR_TRANSITION = { duration: 1.8, ease: ease.soft } as const;
+// Bewust kort: een themawissel hoort strak te voelen, en bij snel heen-en-weer
+// schakelen (home ↔ route) blijft de achtergrond zo dicht op de navigatie i.p.v.
+// secondenlang na te kleuren. Zie ThemeCrossfadeStack voor de interruptible logica.
+const COLOR_TRANSITION = { duration: 0.6, ease: ease.soft } as const;
 const ORBIT_RING_ROTATION_DEG = -20;
 
 /**
@@ -230,28 +232,31 @@ const CENTRAL_PLANET_DESIGN: 'energy' | 'classic' =
 /* ---------------- Theme crossfade stack ---------------- */
 
 interface CrossfadeLayers {
+  /** Volledig dekkende, gesettelde basislaag. */
   base: string;
+  /** Laag die over de basis heen fade't (of terug-uit-fade't); null = geen. */
   incoming: string | null;
+  /** Opacity waar `incoming` naartoe animeert: 1 = infaden, 0 = terug uitfaden. */
+  target: 0 | 1;
 }
 
 /**
  * Crossfade tussen statische, per-theme gerenderde lagen.
  *
- * Voorheen animeerden grote vlakken (full-screen gradients, de 1800px
- * disk-SVG, nebula-fills) hun kleur per frame via motion/CSS-transitions.
- * Elke geanimeerde kleurstap = style recalc + volledige repaint van die laag,
- * 60×/s gedurende de hele 1.8s transitie — en omdat het thema tijdens het
- * draaien continu wisselt was dit een quasi-permanente paint-belasting.
+ * Elke laag wordt per theme één keer gerasterd; de nieuwe laag fade't met
+ * `opacity` (GPU-composited, geen repaint) over de oude heen.
  *
- * Nu wordt elke laag per theme één keer gerasterd en fade't de nieuwe laag
- * met `opacity` (GPU-composited, geen repaint) over de oude heen.
+ * **Interruptible.** Motion interpoleert altijd vanaf de *huidige* opacity, dus
+ * een veranderde wens midden in een fade wordt soepel opgepakt:
+ *  - Schakel je terug naar de basis terwijl een laag infade't, dan keert die
+ *    laag meteen om en fade't weer uit (geen tweede, volle fade die er nog
+ *    achteraan komt). Dit haalt het "knipperen/naklleuren" weg bij snel
+ *    heen-en-weer schakelen tussen home en een route.
+ *  - Komt er midden in een fade een dérde thema, dan wordt de huidige
+ *    (deels-zichtbare) laag de nieuwe basis en fade't het nieuwste thema in.
  *
- * Wachtrij-semantiek: er is altijd precies één volledig dekkende basislaag
- * en maximaal één invadende laag. Wisselt het thema terwijl er al een fade
- * loopt, dan wordt de nieuwste wens onthouden en gestart zodra de lopende
- * fade klaar is. Daardoor wordt er nooit een laag mid-fade weggegooid en is
- * élke zichtbare verandering een vloeiende animatie — geen knippers of
- * sprongen, hoe snel het thema ook wisselt.
+ * Elke render-phase tak maakt zijn eigen guard op de volgende render onwaar,
+ * dus dit kan niet in een lus terechtkomen.
  */
 function ThemeCrossfadeStack({
   themeKey,
@@ -264,48 +269,51 @@ function ThemeCrossfadeStack({
   style?: React.CSSProperties;
   renderLayer: (theme: string) => React.ReactNode;
 }) {
-  const [layers, setLayers] = useState<CrossfadeLayers>(() => ({ base: themeKey, incoming: null }));
-  const pendingRef = useRef<string | null>(null);
+  const [layers, setLayers] = useState<CrossfadeLayers>(() => ({ base: themeKey, incoming: null, target: 1 }));
+  const { base, incoming, target } = layers;
 
-  const activeTarget = layers.incoming ?? layers.base;
-  if (themeKey === activeTarget) {
-    // De nieuwste wens is al (bijna) zichtbaar — eventuele oudere wens vervalt.
-    pendingRef.current = null;
-  } else if (!layers.incoming) {
-    // Render-phase update: fade direct starten zodat er geen frame met
-    // verouderde kleuren commit.
-    setLayers({ base: layers.base, incoming: themeKey });
+  if (themeKey === base) {
+    // Basis moet weer zichtbaar worden. Fade't er nog iets in? Keer het om.
+    if (incoming !== null && target !== 0) {
+      setLayers({ base, incoming, target: 0 });
+    }
+  } else if (incoming === themeKey) {
+    // (Weer) onderweg naar themeKey — zorg dat we infaden i.p.v. uitfaden.
+    if (target !== 1) {
+      setLayers({ base, incoming, target: 1 });
+    }
+  } else if (incoming === null) {
+    setLayers({ base, incoming: themeKey, target: 1 });
   } else {
-    // Er loopt al een fade — onthoud alleen de nieuwste wens.
-    pendingRef.current = themeKey;
+    // Derde thema tijdens een lopende fade: commit de deels-zichtbare laag als
+    // nieuwe basis en fade het nieuwste thema in.
+    setLayers({ base: incoming, incoming: themeKey, target: 1 });
   }
 
-  const handleIncomingSettled = useCallback(() => {
+  const handleSettled = useCallback(() => {
     setLayers((current) => {
-      if (!current.incoming) return current;
-      const settled = current.incoming;
-      const next = pendingRef.current;
-      pendingRef.current = null;
-      if (next && next !== settled) {
-        return { base: settled, incoming: next };
+      if (current.incoming === null) return current;
+      // Volledig ingefade't → wordt de nieuwe basis. Uitgefade't → weggegooid.
+      if (current.target === 1) {
+        return { base: current.incoming, incoming: null, target: 1 };
       }
-      return { base: settled, incoming: null };
+      return { base: current.base, incoming: null, target: 1 };
     });
   }, []);
 
   return (
     <div className={className} style={style}>
-      <div className="absolute inset-0">{renderLayer(layers.base)}</div>
-      {layers.incoming && (
+      <div className="absolute inset-0">{renderLayer(base)}</div>
+      {incoming !== null && (
         <motion.div
-          key={layers.incoming}
+          key={incoming}
           className="absolute inset-0"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={{ opacity: target }}
           transition={COLOR_TRANSITION}
-          onAnimationComplete={handleIncomingSettled}
+          onAnimationComplete={handleSettled}
         >
-          {renderLayer(layers.incoming)}
+          {renderLayer(incoming)}
         </motion.div>
       )}
     </div>

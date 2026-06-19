@@ -1,4 +1,4 @@
-import { startTransition, useState, useCallback, useMemo, memo, useRef, type CSSProperties } from 'react';
+import { startTransition, useDeferredValue, useState, useCallback, useMemo, memo, useRef, type CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronLeft } from 'lucide-react';
 import { contentData, type ContentNode } from '../shared/content';
@@ -512,7 +512,13 @@ export function TableApp() {
 
   const activeRouteNode = navState.selectedMain ?? nearestPlanet ?? contentData[1] ?? contentData[0];
   const selectedThemeNode = navState.selectedMain;
-  const sceneTheme = selectedThemeNode?.theme ?? 'main';
+  // De zware backdrop-recolor (≈10 crossfade-lagen die opnieuw rasteren, incl.
+  // de 1800px disk-SVG) loskoppelen van de urgente view/orbit-wissel. Zonder dit
+  // landen het mounten van de nieuwe OrbitRing én de raster-storm in dezelfde
+  // frame → één dikke hik bij elke routewissel (vooral merkbaar op trage GPU's).
+  // useDeferredValue rendert de backdrop eerst nog met het oude thema (goedkoop)
+  // en pas een beat later met het nieuwe → de twee kosten vallen in aparte frames.
+  const sceneTheme = useDeferredValue(selectedThemeNode?.theme ?? 'main');
   const pageAccentNode = selectedThemeNode;
   const pageAccentStyle = pageAccentNode
     ? ({
