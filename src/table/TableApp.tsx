@@ -512,20 +512,28 @@ export function TableApp() {
 
   const activeRouteNode = navState.selectedMain ?? nearestPlanet ?? contentData[1] ?? contentData[0];
   const selectedThemeNode = navState.selectedMain;
+  // Kleur volgt de route in focus: een gekozen route wint, anders de route die
+  // vooraan in de ring staat (home). Zo kleurt het universum dynamisch mee
+  // terwijl je door de ring draait en is de routekleur al (bijna) toegepast op
+  // het moment dat je een route kiest — de selectie-transitie heeft dan nog
+  // nauwelijks kleurwerk te doen en voelt strak.
+  const themeNode = selectedThemeNode ?? nearestPlanet;
   // De zware backdrop-recolor (≈10 crossfade-lagen die opnieuw rasteren, incl.
-  // de 1800px disk-SVG) loskoppelen van de urgente view/orbit-wissel. Zonder dit
-  // landen het mounten van de nieuwe OrbitRing én de raster-storm in dezelfde
-  // frame → één dikke hik bij elke routewissel (vooral merkbaar op trage GPU's).
-  // useDeferredValue rendert de backdrop eerst nog met het oude thema (goedkoop)
-  // en pas een beat later met het nieuwe → de twee kosten vallen in aparte frames.
-  const sceneTheme = useDeferredValue(selectedThemeNode?.theme ?? 'main');
-  const pageAccentNode = selectedThemeNode;
+  // de 1800px disk-SVG) via useDeferredValue loskoppelen van de urgente
+  // view/orbit-wissel. Twee voordelen: bij een routekeuze vallen het mounten van
+  // de nieuwe OrbitRing en de recolor in aparte frames (geen dubbele hik), en
+  // bij snel slepen door de ring coalesceert React de focus-wissels — alleen de
+  // laatste kleur commit als de main thread druk is, dus geen stapel crossfades.
+  // De crossfade zelf is interruptible (zie ThemeCrossfadeStack): een nieuwe wens
+  // halverwege keert de lopende fade om i.p.v. een tweede in de wachtrij te zetten.
+  const sceneTheme = useDeferredValue(themeNode?.theme ?? 'main');
+  const pageAccentNode = themeNode;
   const pageAccentStyle = pageAccentNode
     ? ({
         '--table-accent': pageAccentNode.color,
-        '--table-accent-soft': rgbaHex(pageAccentNode.color, 0.34),
-        '--table-accent-wash': rgbaHex(pageAccentNode.color, 0.22),
-        '--table-accent-rim': rgbaHex(pageAccentNode.color, 0.52),
+        '--table-accent-soft': rgbaHex(pageAccentNode.color, selectedThemeNode ? 0.34 : 0.16),
+        '--table-accent-wash': rgbaHex(pageAccentNode.color, selectedThemeNode ? 0.22 : 0.1),
+        '--table-accent-rim': rgbaHex(pageAccentNode.color, selectedThemeNode ? 0.52 : 0.26),
       } as CSSProperties & Record<string, string>)
     : undefined;
 
@@ -561,7 +569,7 @@ export function TableApp() {
       <SpaceCanvas
         theme={sceneTheme}
         surface="table"
-        centralPlanetColor={selectedThemeNode?.color}
+        centralPlanetColor={themeNode?.color}
         showCentralPlanet={navState.level !== 'detail'}
       />
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_50%_43%,rgba(102,42,136,0.22),transparent_24%),radial-gradient(circle_at_18%_82%,rgba(255,51,68,0.18),transparent_28%),radial-gradient(circle_at_88%_18%,rgba(30,144,255,0.18),transparent_24%),linear-gradient(135deg,rgba(7,16,22,0.54),rgba(17,19,28,0.38))]" />
