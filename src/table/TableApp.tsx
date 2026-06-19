@@ -574,12 +574,17 @@ export function TableApp() {
       />
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_50%_43%,rgba(102,42,136,0.22),transparent_24%),radial-gradient(circle_at_18%_82%,rgba(255,51,68,0.18),transparent_28%),radial-gradient(circle_at_88%_18%,rgba(30,144,255,0.18),transparent_24%),linear-gradient(135deg,rgba(7,16,22,0.54),rgba(17,19,28,0.38))]" />
       <div className="pointer-events-none absolute inset-0 z-[1] opacity-[0.10] [background-image:linear-gradient(115deg,rgba(255,255,255,0.25)_1px,transparent_1px),linear-gradient(25deg,rgba(255,255,255,0.20)_1px,transparent_1px)] [background-size:88px_88px,144px_144px]" />
+      {/* Accent-waas over de backdrop. Bewust GEEN mix-blend-mode: 'screen' meer:
+          dat is een niet-geïsoleerde full-screen composite-pass die op trage
+          Linux/Intel-Chromium (NUC) bij élke kleurwissel opnieuw moet worden
+          samengesteld → een grote bron van haperingen. Een gewone (source-over)
+          gekleurde waas met dezelfde lage alpha's geeft vrijwel hetzelfde beeld
+          zonder die pass. */}
       <div
         className="pointer-events-none absolute inset-0 z-[2] transition-opacity duration-500"
         style={{
           opacity: pageAccentNode ? 1 : 0,
           background: 'radial-gradient(circle at 50% 50%, var(--table-accent-soft), transparent 34%), linear-gradient(135deg, var(--table-accent-wash), transparent 46%, var(--table-accent-wash))',
-          mixBlendMode: 'screen',
         }}
       />
       <div
