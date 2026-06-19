@@ -41,7 +41,7 @@ const themeCopy: Record<string, string> = {
   twin: 'Simulaties, sensordata en digitale representaties van productieprocessen.',
   rapid: 'Van idee naar tastbaar prototype met digitale fabricage.',
   robotics: 'Robotica labs, cobots, autonome systemen en veilige testomgevingen.',
-  main: 'Draai aan de touchtafel. Deze presentatie volgt live welk kennisthema in focus staat.',
+  main: 'Draai op de touchtafel aan de planeten. Dit scherm volgt live welke kennisroute in focus staat.',
 };
 
 type DisplayMode = 'idle' | 'focus' | 'submenu' | 'detail';
