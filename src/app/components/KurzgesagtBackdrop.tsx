@@ -301,13 +301,30 @@ function ThemeCrossfadeStack({
     });
   }, []);
 
+  // Lagen worden gekeyd op thema. Cruciaal voor trage/software-renderende
+  // Chromium (de NUC): als de infade klaar is WORDT de incoming-laag de basis
+  // (zelfde React-key → zelfde DOM-node → de al-gerasterde inhoud blijft staan),
+  // en unmount de óúde basis terwijl die volledig is afgedekt. Bij de overgang
+  // hoeft er dus NIETS opnieuw gerasterd te worden. Voorheen herrasterde de
+  // basis-laag het nieuwe thema terwijl de al-geschilderde incoming-laag werd
+  // weggegooid → op trage raster een 1-frame gat = knipperen bij elke kleurwissel.
   return (
     <div className={className} style={style}>
-      <div className="absolute inset-0">{renderLayer(base)}</div>
+      <motion.div
+        key={base}
+        className="absolute inset-0"
+        style={{ zIndex: 1 }}
+        initial={false}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0 }}
+      >
+        {renderLayer(base)}
+      </motion.div>
       {incoming !== null && (
         <motion.div
           key={incoming}
           className="absolute inset-0"
+          style={{ zIndex: 2, willChange: 'opacity' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: target }}
           transition={COLOR_TRANSITION}
