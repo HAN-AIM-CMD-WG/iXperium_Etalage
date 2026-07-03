@@ -15,11 +15,30 @@ Geen enkele code-optimalisatie lost een 6 fps-vloer op — de GPU moet aan.
 
 ## Stap 1 — controleer de huidige status
 
-Open op de NUC in Chromium: `chrome://gpu`
+Kiosk-modus heeft geen adresbalk; open `chrome://gpu` zo:
+
+1. Toetsenbord aan de NUC → terminal openen met `Ctrl+Alt+T`
+   (wisselen tussen kiosk en terminal: `Alt+Tab`).
+2. Terwijl de kiosk draait:
+
+   ```bash
+   chromium chrome://gpu
+   ```
+
+   Dit opent een venster **in het al draaiende kiosk-proces** en toont dus de
+   echte, live status van de kiosk zelf. Sluiten na afloop: `Alt+F4`/`Ctrl+W`.
+
+   > Let op: nieuwe vlaggen meegeven aan een tweede `chromium`-aanroep heeft
+   > géén effect zolang het proces al draait — voor een test mét vlaggen heb
+   > je een apart profiel nodig (zie stap 2) of herstart je de kiosk.
+
+   Plan B zonder terminal: zet in het startup-script tijdelijk de URL op
+   `chrome://gpu`, herstart, lees af, zet terug.
 
 Kijk bovenaan bij **Graphics Feature Status**. Staat bij *Rasterization*,
 *Canvas* of *Compositing* iets anders dan "Hardware accelerated"
 (bv. "Software only. Hardware acceleration disabled") → dat is het probleem.
+Rapport delen: knop "Copy Report to Clipboard" bovenaan de pagina.
 
 ## Stap 2 — start Chromium via het meegeleverde script
 
@@ -28,9 +47,23 @@ Kijk bovenaan bij **Graphics Feature Status**. Staat bij *Rasterization*,
 KIOSK=1 ./scripts/nuc-chromium.sh <url>    # productie/kiosk fullscreen
 ```
 
-Controleer daarna `chrome://gpu` opnieuw — nu hoort er overal
-"Hardware accelerated" te staan. Test de tafel: het glitchen/knipperen bij
-kleurwissels en terug-naar-overzicht hoort weg te zijn.
+> In het bestaande startup-script: vervang de kale `chromium ... --kiosk <url>`
+> aanroep door `KIOSK=1 /pad/naar/repo/scripts/nuc-chromium.sh <url>`.
+
+Eerst los testen of de vlaggen effect hebben, zónder de kiosk te stoppen
+(apart profiel, want vlaggen op een al draaiend proces worden genegeerd;
+gebruik `$HOME`, niet `/tmp` — snap-Chromium mag niet in `/tmp` schrijven):
+
+```bash
+chromium --user-data-dir="$HOME/gpu-check" \
+  --ignore-gpu-blocklist --enable-gpu-rasterization \
+  --enable-zero-copy --enable-native-gpu-memory-buffers \
+  --ozone-platform-hint=auto chrome://gpu
+```
+
+Controleer `chrome://gpu` — nu hoort er overal "Hardware accelerated" te
+staan. Test daarna de tafel: het glitchen/knipperen bij kleurwissels en
+terug-naar-overzicht hoort weg te zijn.
 
 ## Stap 3 — staat er nog steeds "Software only"?
 
