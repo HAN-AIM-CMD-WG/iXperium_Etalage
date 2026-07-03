@@ -1728,9 +1728,13 @@ export const OrbitRing = memo(function OrbitRing({
     const frontCanvas = frontCanvasRef.current;
     const labelCanvas = labelCanvasRef.current;
     const wrapper = wrapperRef.current;
+    // GEEN `desynchronized: true` meer. Die low-latency hint laat canvas-frames
+    // buiten de compositor-vsync om presenteren; op Linux/Chromium (de NUC) is
+    // dat een gedocumenteerde bron van tearing/flikkeren wanneer de rest van de
+    // pagina tegelijk animeert. macOS negeert de hint volledig — daarom was het
+    // knipperen daar nooit zichtbaar. Kost: hooguit één frame extra input-lag.
     const canvasContextOptions: CanvasRenderingContext2DSettings = {
       alpha: true,
-      desynchronized: true,
     };
     const backContext = backCanvas?.getContext('2d', canvasContextOptions);
     const frontContext = frontCanvas?.getContext('2d', canvasContextOptions);
