@@ -2,7 +2,6 @@ import { startTransition, useDeferredValue, useState, useCallback, useMemo, memo
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronLeft } from 'lucide-react';
 import { contentData, type ContentNode } from '../shared/content';
-import type { ConnectionHealth } from '../shared/protocol';
 import { DEFAULT_VISUAL_STYLE } from '../shared/visualStyle';
 import { useNavigationSocket } from '../shared/useNavigationSocket';
 import { useRenderProfile } from '../shared/renderProfile';
@@ -11,7 +10,6 @@ import { OrbitRing, type PlanetSelectOrigin } from '../app/components/OrbitRing'
 import { ContentView } from '../app/components/ContentView';
 import { FlyingPlanet, type FlyMode } from '../app/components/FlyingPlanet';
 import { SpaceCanvas } from '../app/components/scene/SpaceCanvas';
-import { PerfStats } from '../app/components/scene/PerfStats';
 import smartIndustryWordmarkUrl from '../../Smart-Industry-wit.png';
 
 const TABLE_SCENE_SCALE = 0.88;
@@ -144,18 +142,6 @@ interface NavigationState {
   selectedMain: ContentNode | null;
   selectedSub: ContentNode | null;
 }
-
-const ConnectionPill = memo(function ConnectionPill({ connected, health }: { connected: boolean; health: ConnectionHealth }) {
-  return (
-    <div className="connection-pill fixed right-8 top-8 z-[220] flex items-center gap-2 rounded-2xl border border-white/10 bg-[#0a121a]/80 px-4 py-3 text-sm font-semibold text-white/75 shadow-[0_18px_60px_rgba(0,0,0,0.26)]">
-      <span
-        className="h-2 w-2 rounded-full"
-        style={{ backgroundColor: connected ? '#46B469' : '#FF3344' }}
-      />
-      <span>{connected ? 'Live sync' : health}</span>
-    </div>
-  );
-});
 
 const routeDescription: Record<string, string> = {
   ai: 'Data, algoritmes, praktijkcases',
@@ -395,7 +381,7 @@ const RightPanelStack = memo(function RightPanelStack({
 });
 
 export function TableApp() {
-  const { connected, health, publishNavigation, resetNavigation } = useNavigationSocket('table');
+  const { publishNavigation, resetNavigation } = useNavigationSocket('table');
   const [navState, setNavState] = useState<NavigationState>({
     level: 'main',
     selectedMain: null,
@@ -599,10 +585,6 @@ export function TableApp() {
         }}
       />
 
-      {/* Dev FPS overlay — alleen in development build */}
-      <PerfStats />
-
-      <ConnectionPill connected={connected} health={health} />
       <RouteCommandPanel activeNode={selectedThemeNode} onSelectNode={handleSelectMain} />
       <RightPanelStack
         routeNode={activeRouteNode}

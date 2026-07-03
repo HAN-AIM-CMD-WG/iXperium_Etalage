@@ -1,9 +1,8 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { PerfStats } from '../app/components/scene/PerfStats';
 import { contentData, type ContentNode } from '../shared/content';
 import { resolveNavigationState } from '../shared/navigation';
-import { INITIAL_NAVIGATION_STATE, type ConnectionHealth } from '../shared/protocol';
+import { INITIAL_NAVIGATION_STATE } from '../shared/protocol';
 import { DEFAULT_VISUAL_STYLE } from '../shared/visualStyle';
 import { useNavigationSocket } from '../shared/useNavigationSocket';
 import { useRenderProfile } from '../shared/renderProfile';
@@ -321,24 +320,6 @@ function getApplications(node: ContentNode | null) {
     : ['Verkennen', 'Experimenteren', 'Toepassen'];
 }
 
-const StatusIndicator = memo(function StatusIndicator({
-  connected,
-  health,
-}: {
-  connected: boolean;
-  health: ConnectionHealth;
-}) {
-  return (
-    <div className="connection-pill fixed right-8 top-8 z-[220] flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.08] px-4 py-3 text-sm font-bold text-white/75 shadow-[0_18px_60px_rgba(0,0,0,0.26)] backdrop-blur-md">
-      <span
-        className="h-2.5 w-2.5 rounded-full"
-        style={{ backgroundColor: connected ? '#46B469' : '#FF3344' }}
-      />
-      <span>{connected ? 'Live sync' : health}</span>
-    </div>
-  );
-});
-
 /**
  * Hero-banner bovenaan het scherm: de witte "Smart Industry" wordmark,
  * horizontaal gecentreerd. `x: '-50%'` blijft in de transform staan terwijl
@@ -602,7 +583,7 @@ const KioskHandoffEntry = memo(function KioskHandoffEntry({
 });
 
 export function KioskApp() {
-  const { connected, health, lastSnapshot } = useNavigationSocket('kiosk');
+  const { lastSnapshot } = useNavigationSocket('kiosk');
 
   const navigationState = lastSnapshot?.state ?? INITIAL_NAVIGATION_STATE;
   const resolvedState = useMemo(() => resolveNavigationState(navigationState), [navigationState]);
@@ -651,9 +632,7 @@ export function KioskApp() {
       <KioskNebulaBackdrop accentColor={accentColor} />
       <div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_50%_43%,rgba(5,8,23,0.04),rgba(5,8,23,0.30)_48%,rgba(5,8,23,0.72)_100%)]" />
 
-      <PerfStats />
       <KioskTopWordmark />
-      <StatusIndicator connected={connected} health={health} />
 
       {/* Cross-screen handoff — dezelfde planeet rijst van onder op tot het midden. */}
       <AnimatePresence>
