@@ -47,8 +47,11 @@ Rapport delen: knop "Copy Report to Clipboard" bovenaan de pagina.
 KIOSK=1 ./scripts/nuc-chromium.sh <url>    # productie/kiosk fullscreen
 ```
 
-> In het bestaande startup-script: vervang de kale `chromium ... --kiosk <url>`
-> aanroep door `KIOSK=1 /pad/naar/repo/scripts/nuc-chromium.sh <url>`.
+> Voor de NUC-kiosk is er een kant-en-klaar startup-script:
+> `scripts/nuc-start.sh` (dev-servers + Chromium-kiosk met GPU-vlaggen +
+> poort-check + herstart-loop). Laat de autostart/systemd-unit dát script
+> aanroepen i.p.v. een eigen kopie. Staat het pad van de repo ergens anders
+> dan `/home/kiosk/iXperium-planet-concept`, pas dan `REPO=` bovenin aan.
 
 Eerst los testen of de vlaggen effect hebben, zónder de kiosk te stoppen
 (apart profiel, want vlaggen op een al draaiend proces worden genegeerd;
