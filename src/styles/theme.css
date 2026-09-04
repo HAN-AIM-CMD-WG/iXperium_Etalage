@@ -788,15 +788,27 @@
     0 0 24px rgba(91, 182, 255, 0.22);
 }
 
-/* iXperium wordmark linksboven — zonder drop shadow, clean op het donker. */
-[data-visual-style='kurzgesagt'] .app-branding h1 {
-  font-family: var(--ixp-font-heading);
-  color: #ffffff;
-  letter-spacing: 0.01em;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.52);
+/* Branding linksboven: de brede witte "iXperium Smart Industry" wordmark
+   (zelfde asset als de kiosk-hero).
+   Uitlijning: de kop "Kies een kennisroute" in het linkerpaneel begint op
+   2rem (paneloffset) + 1px (rand) + 1.25rem (padding) = 3.3125rem. De "K"
+   heeft daarbovenop nog linker schreefruimte, dus daar komt een kleine
+   optische correctie bij -> --app-branding-inset.
+   De PNG zelf heeft ~4.3% transparante marge links (ink start op px 114 van
+   2652); die compenseren we relatief aan de gerenderde breedte, zodat de
+   uitlijning klopt bij elke schermbreedte.
+   pointer-events uit zodat hij niets blokkeert. */
+.app-branding {
+  --app-branding-width: clamp(18rem, 26vw, 27rem);
+  --app-branding-inset: 3.6rem;
+  left: calc(var(--app-branding-inset) - var(--app-branding-width) * 0.043);
+  width: var(--app-branding-width);
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 6px 22px rgba(0, 0, 0, 0.4));
 }
 
-[data-visual-style='kurzgesagt'] .app-branding p,
 [data-visual-style='kurzgesagt'] .table-help,
 [data-visual-style='kurzgesagt'] .table-eyebrow,
 [data-visual-style='kurzgesagt'] .kiosk-eyebrow,
@@ -805,41 +817,6 @@
   color: rgba(255, 255, 255, 0.72);
   letter-spacing: 0;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.54);
-}
-
-[data-visual-style='kurzgesagt'] .app-branding__mark {
-  position: relative;
-  overflow: hidden;
-  border: 4px solid var(--ixp-purple);
-  background:
-    linear-gradient(90deg, transparent 47%, rgba(25, 53, 60, 0.24) 47% 53%, transparent 53%),
-    linear-gradient(180deg, var(--ixp-yellow) 0 48%, var(--ixp-cyan) 48% 100%);
-  box-shadow: 0 7px 0 var(--ixp-purple), 0 16px 42px rgba(87, 56, 118, 0.28);
-}
-
-[data-visual-style='kurzgesagt'] .app-branding__mark::before,
-[data-visual-style='kurzgesagt'] .app-branding__mark::after {
-  position: absolute;
-  border: 3px solid var(--ixp-purple);
-  content: '';
-}
-
-[data-visual-style='kurzgesagt'] .app-branding__mark::before {
-  left: -18%;
-  top: 17%;
-  width: 64%;
-  height: 38%;
-  border-radius: 999px;
-  background: var(--ixp-magenta);
-}
-
-[data-visual-style='kurzgesagt'] .app-branding__mark::after {
-  right: -16%;
-  bottom: 14%;
-  width: 54%;
-  height: 42%;
-  border-radius: 0.35rem;
-  background: var(--ixp-light-blue);
 }
 
 [data-visual-style='kurzgesagt'] .central-planet-label {

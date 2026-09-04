@@ -24,6 +24,14 @@ const RENDER_FRAME_INTERVAL_MS = 1000 / MAX_RENDER_FPS;
 const FRAME_INTERVAL_EPSILON_MS = 1;
 const DRAG_CLICK_THRESHOLD = 12;
 const FOCUS_THROTTLE_MS = 70;
+// Auto-scroll (paneel-klik → planeet naar het front draaien). Snelle, korte
+// beweging: de duur schaalt met de te draaien hoek maar blijft binnen deze
+// grenzen zodat het altijd "snap" aanvoelt. Daarna staat de ring even stil
+// (HOLD) voordat de selectie afgaat, zodat je ziet wélke planeet gekozen wordt.
+const AUTO_SELECT_MIN_MS = 260;
+const AUTO_SELECT_MAX_MS = 620;
+const AUTO_SELECT_MS_PER_RAD = 150;
+const AUTO_SELECT_HOLD_MS = 190;
 const LAYER_FADE_START = -0.22;
 const LAYER_FADE_END = 0.22;
 const ORBIT_ROTATION_DEG = -20;
@@ -56,6 +64,17 @@ export interface PlanetSelectOrigin {
   imageCssSize?: number;
 }
 
+/**
+ * Verzoek om een specifieke planeet naar het front van de ring te draaien en
+ * hem daarna automatisch te selecteren — alsof er op de planeet getikt is.
+ * `nonce` maakt een herhaald verzoek voor dezelfde node herkenbaar, zodat
+ * twee keer op hetzelfde onderwerp klikken ook twee keer werkt.
+ */
+export interface OrbitAutoSelectRequest {
+  nodeId: string;
+  nonce: number;
+}
+
 interface OrbitRingProps {
   nodes: ContentNode[];
   onSelectNode: (node: ContentNode, origin?: PlanetSelectOrigin) => void;
@@ -69,6 +88,11 @@ interface OrbitRingProps {
   /** Node-id dat NIET in de orbit getekend wordt (bijv. terwijl hij naar het
    *  centrum vliegt). Zo lijkt het of de planeet zelf de orbit verlaat. */
   hiddenNodeId?: string | null;
+  /** Draai deze planeet naar het front en selecteer hem daarna automatisch. */
+  autoSelectRequest?: OrbitAutoSelectRequest | null;
+  /** Vuurt zodra de planeet vooraan staat; levert dezelfde origin (positie +
+   *  snapshot) als een echte tik, zodat de fly-animatie identiek is. */
+  onAutoSelectComplete?: (node: ContentNode, origin?: PlanetSelectOrigin) => void;
 }
 
 interface RenderedPlanet {
@@ -101,6 +125,19 @@ function clamp(value: number, min: number, max: number) {
 function smoothstep(edge0: number, edge1: number, value: number) {
   const t = clamp01((value - edge0) / (edge1 - edge0));
   return t * t * (3 - 2 * t);
+}
+
+function easeOutCubic(t: number) {
+  const inverted = 1 - clamp01(t);
+  return 1 - inverted * inverted * inverted;
+}
+
+/**
+ * Kortste hoekverschil (in radialen) van `from` naar `to`, genormaliseerd naar
+ * (-PI, PI]. Zo draait de ring altijd de korte kant om naar een planeet.
+ */
+function shortestAngleDelta(from: number, to: number) {
+  return normalizeAngle(to - from + Math.PI) - Math.PI;
 }
 
 function rotatePoint(x: number, y: number, rotation: number) {
@@ -1293,6 +1330,8 @@ export const OrbitRing = memo(function OrbitRing({
   centerMaskRadius = 0,
   visualStyle = DEFAULT_VISUAL_STYLE,
   hiddenNodeId = null,
+  autoSelectRequest = null,
+  onAutoSelectComplete,
 }: OrbitRingProps) {
   const backCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const frontCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1326,6 +1365,18 @@ export const OrbitRing = memo(function OrbitRing({
   const nodesRef = useRef(nodes);
   const onSelectNodeRef = useRef(onSelectNode);
   const onFocusChangeRef = useRef(onFocusChange);
+  const onAutoSelectCompleteRef = useRef(onAutoSelectComplete);
+  // Lopende auto-scroll: draait `nodeId` naar het front-punt van de ring en
+  // selecteert hem daarna. Tijdens de animatie negeren we auto-rotate/momentum.
+  const autoScrollRef = useRef<{
+    nodeId: string;
+    from: number;
+    to: number;
+    startTime: number;
+    duration: number;
+    /** Gezet zodra het doel bereikt is: tijdstip waarop we selecteren. */
+    selectAt: number | null;
+  } | null>(null);
   // Per-node memo voor deterministische, frame-invariante waarden.
   // stringHash en getBandLabel zijn pure functies van node.id / node.title;
   // we cachen ze zodat ze niet elke frame opnieuw uitgerekend worden.
@@ -1369,7 +1420,49 @@ export const OrbitRing = memo(function OrbitRing({
   useEffect(() => {
     onSelectNodeRef.current = onSelectNode;
     onFocusChangeRef.current = onFocusChange;
-  }, [onSelectNode, onFocusChange]);
+    onAutoSelectCompleteRef.current = onAutoSelectComplete;
+  }, [onSelectNode, onFocusChange, onAutoSelectComplete]);
+
+  // Nieuw auto-select verzoek (bijv. een klik in het rechter paneel): bereken
+  // de rotatie waarbij de planeet exact op het front-punt staat en start de
+  // animatie. Een nieuw verzoek tijdens een lopende animatie hertarget.
+  useEffect(() => {
+    if (!autoSelectRequest) {
+      autoScrollRef.current = null;
+      return;
+    }
+
+    const currentNodes = nodesRef.current;
+    const nodeCount = currentNodes.length;
+    const index = currentNodes.findIndex((node) => node.id === autoSelectRequest.nodeId);
+    if (index < 0 || nodeCount === 0) {
+      autoScrollRef.current = null;
+      return;
+    }
+
+    // drawOrbit plaatst node `index` op hoek (index / nodeCount) * TAU +
+    // rotation; het front-punt (waar de focus-detectie op mikt) is PI / 2.
+    const desiredRotation = Math.PI / 2 - (index / nodeCount) * TAU;
+    const from = rotationRef.current;
+    const delta = shortestAngleDelta(from, desiredRotation);
+    const duration = clamp(
+      Math.abs(delta) * AUTO_SELECT_MS_PER_RAD,
+      AUTO_SELECT_MIN_MS,
+      AUTO_SELECT_MAX_MS,
+    );
+
+    isDraggingRef.current = false;
+    momentumActiveRef.current = false;
+    velocityRef.current = 0;
+    autoScrollRef.current = {
+      nodeId: autoSelectRequest.nodeId,
+      from,
+      to: from + delta,
+      startTime: performance.now(),
+      duration,
+      selectAt: null,
+    };
+  }, [autoSelectRequest]);
 
   const drawOrbitArc = (
     context: CanvasRenderingContext2D,
@@ -1812,7 +1905,33 @@ export const OrbitRing = memo(function OrbitRing({
       // Animatie tijd voor plasma swirls op orbit-planeten
       animTimeRef.current += deltaSec;
 
-      if (!isDraggingRef.current) {
+      // Node die ná het tekenen van dit frame geselecteerd moet worden. De
+      // selectie gebeurt bewust ná drawOrbit zodat de snapshot van de planeet
+      // uit het definitieve frame komt (planeet exact op het front-punt).
+      let nodeIdToSelect: string | null = null;
+      const autoScroll = autoScrollRef.current;
+
+      if (autoScroll) {
+        if (autoScroll.selectAt === null) {
+          const progress = clamp01((now - autoScroll.startTime) / autoScroll.duration);
+          rotationRef.current = autoScroll.from + (autoScroll.to - autoScroll.from) * easeOutCubic(progress);
+
+          if (progress >= 1) {
+            rotationRef.current = autoScroll.to;
+            autoScroll.selectAt = now + AUTO_SELECT_HOLD_MS;
+          }
+        } else {
+          // Ring staat stil op het doel; korte pauze en dan selecteren.
+          rotationRef.current = autoScroll.to;
+
+          if (now >= autoScroll.selectAt) {
+            nodeIdToSelect = autoScroll.nodeId;
+            autoScrollRef.current = null;
+            // Auto-rotate weer laten oppakken vanaf de laatste richting.
+            velocityRef.current = AUTO_ROTATE_SPEED * lastDirectionRef.current;
+          }
+        }
+      } else if (!isDraggingRef.current) {
         if (momentumActiveRef.current) {
           rotationRef.current += velocityRef.current * frameScale;
           velocityRef.current *= Math.pow(FRICTION, frameScale);
@@ -1830,6 +1949,14 @@ export const OrbitRing = memo(function OrbitRing({
       }
 
       drawOrbit(backCanvas, backContext, frontCanvas, frontContext, labelContext);
+
+      if (nodeIdToSelect) {
+        const node = nodesRef.current.find((candidate) => candidate.id === nodeIdToSelect);
+        if (node) {
+          onAutoSelectCompleteRef.current?.(node, buildOriginForNode(node.id) ?? undefined);
+        }
+      }
+
       animationFrameRef.current = requestAnimationFrame(tick);
     };
 
@@ -1898,6 +2025,43 @@ export const OrbitRing = memo(function OrbitRing({
     }
   };
 
+  const buildPlanetOrigin = (
+    planet: RenderedPlanet,
+    rect: DOMRect,
+    scaleToClient: number,
+  ): PlanetSelectOrigin => {
+    // Converteer de stage-coords van de planeet terug naar viewport-coords
+    // zodat de fly-animatie exact vanaf de planeet kan starten.
+    const snapshot = capturePlanetSnapshot(planet.x, planet.y, planet.radius, scaleToClient);
+
+    return {
+      clientX: rect.left + planet.x * scaleToClient,
+      clientY: rect.top + planet.y * scaleToClient,
+      clientRadius: planet.radius * scaleToClient,
+      image: snapshot?.image,
+      imageCssSize: snapshot?.imageCssSize,
+    };
+  };
+
+  /**
+   * Bouwt dezelfde `PlanetSelectOrigin` als een echte tik, maar op basis van
+   * een node-id i.p.v. een pointer-positie. Gebruikt voor de auto-selectie na
+   * een klik in het rechter paneel, zodat de fly-animatie identiek is.
+   */
+  const buildOriginForNode = (nodeId: string): PlanetSelectOrigin | null => {
+    const canvas = frontCanvasRef.current;
+    if (!canvas) return null;
+
+    const planet = renderedPlanetsRef.current.find((candidate) => candidate.node.id === nodeId);
+    if (!planet) return null;
+
+    const rect = canvas.getBoundingClientRect();
+    const { width } = stageSizeRef.current;
+    const scaleToClient = rect.width > 0 ? rect.width / width : 1;
+
+    return buildPlanetOrigin(planet, rect, scaleToClient);
+  };
+
   const findHitPlanet = (clientX: number, clientY: number): { node: ContentNode; origin: PlanetSelectOrigin } | null => {
     const canvas = frontCanvasRef.current;
     if (!canvas) return null;
@@ -1914,17 +2078,7 @@ export const OrbitRing = memo(function OrbitRing({
       const distance = Math.hypot(x - planet.x, y - planet.y);
 
       if (distance <= hitRadius) {
-        // Converteer de stage-coords van de planeet terug naar viewport-coords
-        // zodat de fly-animatie exact vanaf de getapte planeet kan starten.
-        const snapshot = capturePlanetSnapshot(planet.x, planet.y, planet.radius, scaleToClient);
-        const origin: PlanetSelectOrigin = {
-          clientX: rect.left + planet.x * scaleToClient,
-          clientY: rect.top + planet.y * scaleToClient,
-          clientRadius: planet.radius * scaleToClient,
-          image: snapshot?.image,
-          imageCssSize: snapshot?.imageCssSize,
-        };
-        return { node: planet.node, origin };
+        return { node: planet.node, origin: buildPlanetOrigin(planet, rect, scaleToClient) };
       }
     }
 
@@ -1933,6 +2087,8 @@ export const OrbitRing = memo(function OrbitRing({
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId);
+    // Handmatig slepen wint altijd van een lopende auto-scroll.
+    autoScrollRef.current = null;
     isDraggingRef.current = true;
     momentumActiveRef.current = false;
     velocityRef.current = 0;

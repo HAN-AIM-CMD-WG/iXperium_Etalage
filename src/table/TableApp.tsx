@@ -4,13 +4,17 @@ import { ChevronLeft } from 'lucide-react';
 import { contentData, type ContentNode } from '../shared/content';
 import { DEFAULT_VISUAL_STYLE } from '../shared/visualStyle';
 import { useNavigationSocket } from '../shared/useNavigationSocket';
+import { useIdleTimeout } from '../shared/useIdleTimeout';
 import { useRenderProfile } from '../shared/renderProfile';
 import { Planet } from '../app/components/Planet';
-import { OrbitRing, type PlanetSelectOrigin } from '../app/components/OrbitRing';
+import { OrbitRing, type OrbitAutoSelectRequest, type PlanetSelectOrigin } from '../app/components/OrbitRing';
 import { ContentView } from '../app/components/ContentView';
 import { FlyingPlanet, type FlyMode } from '../app/components/FlyingPlanet';
 import { SpaceCanvas } from '../app/components/scene/SpaceCanvas';
 import smartIndustryWordmarkUrl from '../../Smart-Industry-wit.png';
+// Brede witte "iXperium Smart Industry" wordmark — dezelfde asset als de
+// hero-banner op het kioskscherm (index2.html), hier linksboven als branding.
+import smartIndustryBrandUrl from '../../zooi/Smart-Industry-wit.png';
 
 const TABLE_SCENE_SCALE = 0.88;
 const TABLE_MAIN_ORBIT = {
@@ -27,6 +31,9 @@ const TABLE_SUBMENU_ORBIT = {
 // grootte van de centrum-planeet.
 const CENTER_FLY_DIAMETER = 300;
 const FOCUS_SYNC_THROTTLE_MS = 220;
+// Na deze periode zonder gebruikers-input valt de tafel (en via de socket ook
+// de kiosk) terug naar het startscherm. Elke interactie zet de klok opnieuw.
+const IDLE_RESET_MS = 5 * 60 * 1000;
 const PANEL_BACKGROUND = 'rgba(30, 8, 58, 0.30)';
 const PANEL_LAYOUT_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 const VIEW_TRANSITION = {
@@ -220,11 +227,20 @@ const FocusPreviewPanel = memo(function FocusPreviewPanel({
   focusNode,
   progress,
   themeSelected,
+  interactive,
+  pendingTopicId,
+  onSelectTopic,
 }: {
   routeNode: ContentNode;
   focusNode: ContentNode;
   progress: number;
   themeSelected: boolean;
+  /** Alleen in een submenu draaien deze onderwerpen ook echt in de ring; dan
+   *  zijn de items aanklikbaar. */
+  interactive: boolean;
+  /** Onderwerp waar de ring momenteel naartoe draait. */
+  pendingTopicId: string | null;
+  onSelectTopic: (topic: ContentNode) => void;
 }) {
   // Alle onderwerpen binnen de gekozen kennisroute.
   const topics = [...(routeNode.children ?? [])].reverse();
@@ -282,26 +298,55 @@ const FocusPreviewPanel = memo(function FocusPreviewPanel({
         </div>
       </div>
 
-      {/* Volledige lijst met onderwerpen; het onderwerp in focus is gemarkeerd. */}
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-0.5">
+      {/* Volledige lijst met onderwerpen; het onderwerp in focus is gemarkeerd.
+          In een submenu is elk onderwerp aanklikbaar: de ring draait het naar
+          voren en selecteert het daarna automatisch. */}
+      <div
+        className={`flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-0.5 ${interactive ? 'pointer-events-auto' : ''}`}
+      >
         {topics.length > 0 ? (
           topics.map((topic) => {
             const active = topic.id === focusNode.id;
-            return (
-              <div
-                key={topic.id}
-                className="flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold leading-4 transition-colors"
-                style={{
-                  backgroundColor: active ? rgbaHex(routeNode.color, 0.4) : 'rgba(255,255,255,0.08)',
-                  color: active ? '#FFFFFF' : 'rgba(255,255,255,0.78)',
-                }}
-              >
+            const pending = topic.id === pendingTopicId;
+            const highlighted = active || pending;
+            const style: CSSProperties = {
+              backgroundColor: highlighted ? rgbaHex(routeNode.color, 0.4) : 'rgba(255,255,255,0.08)',
+              color: highlighted ? '#FFFFFF' : 'rgba(255,255,255,0.78)',
+              boxShadow: pending ? `0 0 0 2px ${rgbaHex(routeNode.color, 0.85)}` : undefined,
+            };
+            const content = (
+              <>
                 <span
                   className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
                   style={{ backgroundColor: pastel(topic.color) }}
                 />
                 <span className="min-w-0 truncate">{topic.title}</span>
-              </div>
+              </>
+            );
+
+            if (!interactive) {
+              return (
+                <div
+                  key={topic.id}
+                  className="flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold leading-4 transition-colors"
+                  style={style}
+                >
+                  {content}
+                </div>
+              );
+            }
+
+            return (
+              <button
+                key={topic.id}
+                type="button"
+                onClick={() => onSelectTopic(topic)}
+                aria-pressed={pending}
+                className="flex items-center gap-3 rounded-2xl px-3.5 py-3 text-left text-sm font-semibold leading-4 transition-[background-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                style={style}
+              >
+                {content}
+              </button>
             );
           })
         ) : (
@@ -351,12 +396,18 @@ const RightPanelStack = memo(function RightPanelStack({
   focusNode,
   progress,
   selectedNode,
+  topicsInteractive,
+  pendingTopicId,
+  onSelectTopic,
   onBack,
 }: {
   routeNode: ContentNode;
   focusNode: ContentNode;
   progress: number;
   selectedNode: ContentNode | null;
+  topicsInteractive: boolean;
+  pendingTopicId: string | null;
+  onSelectTopic: (topic: ContentNode) => void;
   onBack: () => void;
 }) {
   return (
@@ -366,6 +417,9 @@ const RightPanelStack = memo(function RightPanelStack({
         focusNode={focusNode}
         progress={progress}
         themeSelected={Boolean(selectedNode)}
+        interactive={topicsInteractive}
+        pendingTopicId={pendingTopicId}
+        onSelectTopic={onSelectTopic}
       />
       <AnimatePresence initial={false}>
         {selectedNode && (
@@ -401,6 +455,11 @@ export function TableApp() {
   } | null>(null);
   const focusThrottleRef = useRef(0);
   const lastPreviewFocusNodeIdRef = useRef<string | null>(null);
+  // Verzoek aan de submenu-ring: draai dit onderwerp naar voren en selecteer
+  // het daarna automatisch. De nonce zorgt dat twee keer hetzelfde onderwerp
+  // aanklikken ook twee keer een animatie start.
+  const [autoSelectRequest, setAutoSelectRequest] = useState<OrbitAutoSelectRequest | null>(null);
+  const autoSelectNonceRef = useRef(0);
   const visualStyle = DEFAULT_VISUAL_STYLE;
   const renderProfile = useRenderProfile();
 
@@ -417,6 +476,7 @@ export function TableApp() {
     });
     setNearestPlanet(node);
     setFocusedSub(null);
+    setAutoSelectRequest(null);
     lastPreviewFocusNodeIdRef.current = node.id;
     focusThrottleRef.current = performance.now();
     publishNavigation({
@@ -453,6 +513,19 @@ export function TableApp() {
     setFlyState(null);
   }, []);
 
+  // Klik in het rechter paneel: laat de ring dit onderwerp naar voren draaien.
+  // De selectie zelf gebeurt pas als de planeet vooraan staat (zie
+  // handleAutoSelectComplete), zodat het exact hetzelfde voelt als zelf tikken.
+  const handleSelectTopicFromPanel = useCallback((node: ContentNode) => {
+    autoSelectNonceRef.current += 1;
+    setAutoSelectRequest({ nodeId: node.id, nonce: autoSelectNonceRef.current });
+  }, []);
+
+  const handleAutoSelectComplete = useCallback((node: ContentNode, origin?: PlanetSelectOrigin) => {
+    setAutoSelectRequest(null);
+    handleSelectSub(node, origin);
+  }, [handleSelectSub]);
+
   const handleFocusChange = useCallback((node: ContentNode) => {
     if (lastPreviewFocusNodeIdRef.current === node.id) return;
 
@@ -486,10 +559,20 @@ export function TableApp() {
     });
     setNearestPlanet(null);
     setFocusedSub(null);
+    setAutoSelectRequest(null);
     focusThrottleRef.current = 0;
     lastPreviewFocusNodeIdRef.current = null;
     resetNavigation();
   }, [resetNavigation]);
+
+  // Inactiviteit-reset: staat er een kennisroute open, dan valt de tafel na
+  // IDLE_RESET_MS zonder input terug naar het startscherm. Op het startscherm
+  // zelf is er niets te resetten, dus dan loopt de timer niet.
+  useIdleTimeout({
+    timeoutMs: IDLE_RESET_MS,
+    enabled: navState.level !== 'main',
+    onIdle: handleHome,
+  });
 
   const relatedNodes = useMemo(() => {
     if (navState.level === 'detail' && navState.selectedMain && navState.selectedSub) {
@@ -591,24 +674,22 @@ export function TableApp() {
         focusNode={panelFocusNode}
         progress={progress}
         selectedNode={selectedThemeNode}
+        topicsInteractive={inSubmenu}
+        pendingTopicId={autoSelectRequest?.nodeId ?? null}
+        onSelectTopic={handleSelectTopicFromPanel}
         onBack={handleHome}
       />
 
-      {/* iXperium branding */}
-      <motion.div
-        className="app-branding fixed left-8 top-8 z-[200] flex items-center gap-4 text-left"
+      {/* iXperium Smart Industry branding linksboven */}
+      <motion.img
+        src={smartIndustryBrandUrl}
+        alt="iXperium Smart Industry"
+        className="app-branding fixed top-14 z-[200]"
+        draggable={false}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-      >
-        <div className="app-branding__mark h-11 w-11 rounded-[0.9rem] bg-gradient-to-br from-[#46B469] to-[#1E90FF] shadow-[0_16px_42px_rgba(70,180,105,0.24)]" />
-        <div>
-          <h1 className="text-2xl font-black leading-7 tracking-normal text-white">
-            iXperium
-          </h1>
-          <p className="mt-1 text-xs font-semibold text-white/55">Smart Industry touchtafel</p>
-        </div>
-      </motion.div>
+      />
 
       {/* Fly-to-center / fly-up overlay — de getapte planeet zelf verplaatst
           + vergroot (de orbit-planeet is verborgen via hiddenNodeId). */}
@@ -709,6 +790,8 @@ export function TableApp() {
                 centerMaskRadius={TABLE_SUBMENU_ORBIT.centerMaskRadius}
                 visualStyle={visualStyle}
                 hiddenNodeId={flyState?.mode === 'upOff' ? flyState.node.id : null}
+                autoSelectRequest={autoSelectRequest}
+                onAutoSelectComplete={handleAutoSelectComplete}
               />
             )}
           </motion.div>
