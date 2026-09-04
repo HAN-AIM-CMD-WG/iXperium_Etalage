@@ -83,6 +83,57 @@ glxinfo -B | grep -i "renderer"
   probeer een X11-sessie i.p.v. Wayland (of andersom) via het
   tandwiel-icoon op het Ubuntu-loginscherm.
 
+## Tweede pc: het etalage-scherm (index2.html)
+
+De etalage-pc (user `ixperium-etalage`) draait **geen servers**. Hij laadt
+alleen `index2.html` van de tafel-pc; die pagina legt zelf de
+websocket-verbinding aan naar poort **3001 van dezelfde host** waarvan hij is
+geladen. Je hoeft dus alleen de hostnaam/het IP van de tafel-pc te weten.
+
+```bash
+# Kopieer het script naar de etalage-pc (de repo is daar niet nodig):
+scp scripts/etalage-start.sh ixperium-etalage@<etalage-ip>:/home/ixperium-etalage/
+chmod +x /home/ixperium-etalage/etalage-start.sh
+
+# Testen (hostnaam of IP van de tafel-pc als argument):
+./etalage-start.sh 192.168.1.50
+```
+
+Vul de standaardwaarde van `TABLE_HOST` bovenin het script in, of geef hem mee
+als argument/env-variabele (`TABLE_HOST=...`). Poorten zijn te overriden met
+`HTTP_PORT`/`SOCKET_PORT`.
+
+Wat het script doet:
+
+- wacht **onbeperkt** tot `TABLE_HOST:3000` antwoordt, zodat de etalage-pc
+  gewoon eerder mag opstarten dan de tafel;
+- wacht daarna maximaal ~30s op poort 3001 en start anders alsnog — socket.io
+  in de pagina blijft zelf oneindig opnieuw verbinden;
+- start Chromium in kiosk-modus met dezelfde GPU-vlaggen als
+  `scripts/nuc-chromium.sh` (het script is self-contained);
+- zet schermbeveiliging/DPMS uit (X11; op Wayland doe je dat via
+  Instellingen → Energie) en verbergt de cursor als `unclutter` is
+  geïnstalleerd;
+- herstart Chromium automatisch als het proces afsluit of crasht.
+
+Autostart als user `ixperium-etalage`:
+
+```bash
+mkdir -p ~/.config/autostart
+cat > ~/.config/autostart/ixperium-etalage.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=iXperium etalage kiosk
+Exec=/home/ixperium-etalage/etalage-start.sh
+X-GNOME-Autostart-enabled=true
+EOF
+```
+
+Werkt het scherm niet? Test eerst vanaf de etalage-pc of de tafel bereikbaar
+is: `curl -I http://<tafel-ip>:3000/index2.html`. Faalt dat, dan blokkeert de
+firewall of het netwerk de verbinding (de tafel bindt op `0.0.0.0`, dus dat is
+niet de beperking).
+
 ## Overig
 
 - Snap-Chromium (Ubuntu-standaard) accepteert deze vlaggen gewoon via de CLI.
