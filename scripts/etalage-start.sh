@@ -16,15 +16,22 @@
 #   ./etalage-start.sh 192.168.1.50
 #   TABLE_HOST=192.168.1.50 ./etalage-start.sh
 #
-# Autostart als user ixperium-etalage:
+# Autostart als user ixperium-etalage (pas het pad aan naar waar dit script
+# staat; `~` werkt niet in een .desktop-bestand):
+#   chmod +x ~/Documents/etalage-start.sh
 #   mkdir -p ~/.config/autostart
 #   cat > ~/.config/autostart/ixperium-etalage.desktop <<'EOF'
 #   [Desktop Entry]
 #   Type=Application
 #   Name=iXperium etalage kiosk
-#   Exec=/home/ixperium-etalage/etalage-start.sh
+#   Exec=/bin/bash -c "$HOME/Documents/etalage-start.sh >> $HOME/etalage-kiosk.log 2>&1"
 #   X-GNOME-Autostart-enabled=true
+#   NoDisplay=true
 #   EOF
+#
+# Zet daarnaast automatisch inloggen aan (Instellingen > Gebruikers) en het
+# scherm op "nooit uitschakelen" (Instellingen > Energie). Zie
+# docs/NUC-SETUP.md. Kiosk-loop stoppen: pkill -f etalage-start.sh
 
 # Geen `set -e`: pkill/xset/curl geven een niet-nul exitcode als er niets te
 # doen is, en dat mag de herstart-loop niet afbreken.

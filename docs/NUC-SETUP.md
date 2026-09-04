@@ -134,14 +134,39 @@ Wat het script doet:
 Autostart als user `ixperium-etalage`:
 
 ```bash
+chmod +x ~/Documents/etalage-start.sh
 mkdir -p ~/.config/autostart
 cat > ~/.config/autostart/ixperium-etalage.desktop <<'EOF'
 [Desktop Entry]
 Type=Application
 Name=iXperium etalage kiosk
-Exec=/home/ixperium-etalage/etalage-start.sh
+Exec=/bin/bash -c "$HOME/Documents/etalage-start.sh >> $HOME/etalage-kiosk.log 2>&1"
 X-GNOME-Autostart-enabled=true
+NoDisplay=true
 EOF
+```
+
+Let op: `Exec` moet een **absoluut pad** zijn (`~` werkt niet in een
+`.desktop`-bestand, `$HOME` via `/bin/bash -c` wel). Pas het pad aan als het
+script ergens anders staat. De logregels komen in `~/etalage-kiosk.log`.
+
+Nog twee instellingen die erbij horen, want autostart draait pas ná het
+inloggen en een etalage-scherm mag niet in slaap vallen:
+
+- **Automatisch inloggen**: Instellingen → Gebruikers → *Automatisch
+  aanmelden* aan (of in `/etc/gdm3/custom.conf`: `AutomaticLoginEnable=true`
+  en `AutomaticLogin=ixperium-etalage`).
+- **Scherm nooit uitschakelen/vergrendelen**: Instellingen → Energie →
+  *Scherm uitschakelen: Nooit*, en Instellingen → Privacy → Schermvergrendeling
+  uit. Het script zet dit ook via `xset`, maar dat werkt alleen op een
+  X11-sessie.
+
+Handig tijdens installeren:
+
+```bash
+~/Documents/etalage-start.sh          # nu starten (zonder herstarten)
+pkill -f etalage-start.sh             # kiosk-loop stoppen (Alt+F4 herstart hem)
+rm ~/.config/autostart/ixperium-etalage.desktop   # autostart uitzetten
 ```
 
 Werkt het scherm niet? Test eerst vanaf de etalage-pc of de tafel bereikbaar
