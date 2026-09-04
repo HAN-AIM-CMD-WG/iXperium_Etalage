@@ -34,6 +34,7 @@ import smartIndustryImg from '../assets/topics/smart_industry.jpg';
 import smartIndustryWideImg from '../assets/topics/smart_industry1.jpg';
 import additivePrinterImg from '../assets/topics/additive_3d_printer.jpg';
 import additiveCaseImg from '../assets/topics/additive_lalique1.jpg';
+import fablabImg from '../assets/topics/fablab.jpg';
 
 const oldImages = {
   aiMain: aiMainImg,
@@ -50,6 +51,7 @@ const oldImages = {
   smartIndustryWide: smartIndustryWideImg,
   additivePrinter: additivePrinterImg,
   additiveCase: additiveCaseImg,
+  fablab: fablabImg,
 } as const;
 
 const hanImages = {
@@ -412,7 +414,7 @@ export const contentData: ContentNode[] = [
           highlights: ['Digitale werkplaats', '3D-printen', 'Materiaalexperiment'],
           applications: ['Prototypebouw', 'Onderwijsprojecten', 'Maakindustrie demo'],
           sourceLabel: 'HAN iXperium Smart Industry en FabLab',
-          image: oldImages.additivePrinter,
+          image: oldImages.fablab,
           relatedItems: ['Toolkit', 'Cases'],
         },
       },
