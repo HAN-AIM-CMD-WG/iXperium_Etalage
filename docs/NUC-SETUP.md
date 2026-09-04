@@ -88,25 +88,39 @@ glxinfo -B | grep -i "renderer"
 De etalage-pc (user `ixperium-etalage`) draait **geen servers**. Hij laadt
 alleen `index2.html` van de tafel-pc; die pagina legt zelf de
 websocket-verbinding aan naar poort **3001 van dezelfde host** waarvan hij is
-geladen. Je hoeft dus alleen de hostnaam/het IP van de tafel-pc te weten.
+geladen.
+
+`scripts/etalage-start.sh` is één zelfstandig bestand: kopieer het naar de
+etalage-pc, maak het uitvoerbaar en start het. De repo hoeft daar niet te
+staan en er is niets te configureren — het script zoekt de tafel-pc zelf op
+het netwerk.
 
 ```bash
-# Kopieer het script naar de etalage-pc (de repo is daar niet nodig):
+# Vanaf de Mac (of via een USB-stick):
 scp scripts/etalage-start.sh ixperium-etalage@<etalage-ip>:/home/ixperium-etalage/
-chmod +x /home/ixperium-etalage/etalage-start.sh
 
-# Testen (hostnaam of IP van de tafel-pc als argument):
-./etalage-start.sh 192.168.1.50
+# Op de etalage-pc:
+chmod +x ~/etalage-start.sh
+~/etalage-start.sh
 ```
 
-Vul de standaardwaarde van `TABLE_HOST` bovenin het script in, of geef hem mee
-als argument/env-variabele (`TABLE_HOST=...`). Poorten zijn te overriden met
-`HTTP_PORT`/`SOCKET_PORT`.
+Weet je het IP van de tafel-pc en wil je niet laten zoeken:
+
+```bash
+~/etalage-start.sh 192.168.1.50        # of: TABLE_HOST=192.168.1.50 ~/etalage-start.sh
+```
+
+Poorten zijn te overriden met `HTTP_PORT`/`SOCKET_PORT`.
 
 Wat het script doet:
 
-- wacht **onbeperkt** tot `TABLE_HOST:3000` antwoordt, zodat de etalage-pc
-  gewoon eerder mag opstarten dan de tafel;
+- zoekt de tafel-pc in deze volgorde: expliciet opgegeven host → laatst
+  gebruikte host (gecached in `~/.cache/ixperium-etalage-host`) → bekende
+  hostnamen → parallelle scan van het eigen `/24`-subnet (~5s). Een gevonden
+  host wordt gecontroleerd op de `<title>` van `index2.html`, dus een andere
+  webserver op poort 3000 wordt niet per ongeluk gebruikt;
+- blijft **onbeperkt** zoeken/wachten, zodat de etalage-pc gewoon eerder mag
+  opstarten dan de tafel;
 - wacht daarna maximaal ~30s op poort 3001 en start anders alsnog — socket.io
   in de pagina blijft zelf oneindig opnieuw verbinden;
 - start Chromium in kiosk-modus met dezelfde GPU-vlaggen als
@@ -114,7 +128,8 @@ Wat het script doet:
 - zet schermbeveiliging/DPMS uit (X11; op Wayland doe je dat via
   Instellingen → Energie) en verbergt de cursor als `unclutter` is
   geïnstalleerd;
-- herstart Chromium automatisch als het proces afsluit of crasht.
+- herstart Chromium automatisch als het proces afsluit of crasht, en zoekt dan
+  opnieuw — een gewijzigd IP van de tafel-pc wordt dus zelf opgelost.
 
 Autostart als user `ixperium-etalage`:
 
