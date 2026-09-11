@@ -227,6 +227,14 @@ Daarna de kiosk herstarten (Chromium afsluiten of de pc rebooten). Het
 etalage-scherm hoeft niet bijgewerkt te worden: dat laadt de pagina van de
 tafel.
 
+### Projectmap hernoemen
+
+`./rename-project-folder.sh` doet dat op de tafel-pc in één keer: kiosk
+stoppen, map hernoemen (standaard naar `iXperium_Etalage`), `git pull`, de
+Vite-cache met absolute paden opruimen en autostart-/systemd-bestanden die nog
+het oude pad bevatten bijwerken (met `.bak`-backup). Eerst kijken wat er zou
+gebeuren: `./rename-project-folder.sh --dry-run`. Niet met sudo draaien.
+
 ---
 
 ## Het gaat stuk — waar begin je?
