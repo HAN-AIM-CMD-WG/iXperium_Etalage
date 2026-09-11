@@ -5,8 +5,12 @@
 # kiosk-modus MET geforceerde GPU-versnelling (via scripts/nuc-chromium.sh —
 # zie docs/NUC-SETUP.md waarom dat cruciaal is). Sluit Chromium af, dan wordt
 # alles opgeruimd en opnieuw gestart.
+#
+# REPO is de map van de repo zelf: standaard één niveau boven dit script. Zo
+# blijft het werken als de map wordt hernoemd of verplaatst. Een ander pad
+# forceren kan met: REPO=/pad/naar/repo ./scripts/nuc-start.sh
 
-REPO="/home/kiosk/iXperium-planet-concept"
+REPO="${REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 URL="http://localhost:3000/"
 
 while true; do

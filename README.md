@@ -192,8 +192,9 @@ inloggen. Volledige instructies staan in **[docs/NUC-SETUP.md](docs/NUC-SETUP.md
 
 ### Tafel-pc (`scripts/nuc-start.sh`)
 
-Repo staat in `/home/kiosk/iXperium-planet-concept`. Het script start
-`npm run dev`, wacht tot poort 3000 echt antwoordt (max 60s) en opent dan
+Repo staat in `/home/kiosk/iXperium_Etalage`. Het script bepaalt dat pad zelf
+(één map boven het script), dus de map mag hernoemd of verplaatst worden. Het
+start `npm run dev`, wacht tot poort 3000 echt antwoordt (max 60s) en opent dan
 Chromium in kiosk-modus op `localhost:3000`. Sluit Chromium af, dan ruimt het
 op en begint opnieuw.
 
@@ -217,7 +218,7 @@ Start Chromium op die machines dus nooit "gewoon". Controleren kan via
 ### Updaten
 
 ```bash
-cd /home/kiosk/iXperium-planet-concept
+cd /home/kiosk/iXperium_Etalage
 git pull
 npm install        # alleen als package.json is gewijzigd
 ```

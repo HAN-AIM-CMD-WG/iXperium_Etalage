@@ -50,8 +50,10 @@ KIOSK=1 ./scripts/nuc-chromium.sh <url>    # productie/kiosk fullscreen
 > Voor de NUC-kiosk is er een kant-en-klaar startup-script:
 > `scripts/nuc-start.sh` (dev-servers + Chromium-kiosk met GPU-vlaggen +
 > poort-check + herstart-loop). Laat de autostart/systemd-unit dát script
-> aanroepen i.p.v. een eigen kopie. Staat het pad van de repo ergens anders
-> dan `/home/kiosk/iXperium-planet-concept`, pas dan `REPO=` bovenin aan.
+> aanroepen i.p.v. een eigen kopie. Het script bepaalt het pad van de repo
+> zelf (één map boven het script), dus je mag de map hernoemen of verplaatsen;
+> alleen het pad in de autostart-entry moet dan mee. Een ander pad forceren
+> kan met `REPO=/pad/naar/repo`.
 
 Eerst los testen of de vlaggen effect hebben, zónder de kiosk te stoppen
 (apart profiel, want vlaggen op een al draaiend proces worden genegeerd;
