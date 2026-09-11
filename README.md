@@ -235,6 +235,16 @@ Vite-cache met absolute paden opruimen en autostart-/systemd-bestanden die nog
 het oude pad bevatten bijwerken (met `.bak`-backup). Eerst kijken wat er zou
 gebeuren: `./rename-project-folder.sh --dry-run`. Niet met sudo draaien.
 
+### Autostart van de tafel repareren
+
+Start de kiosk niet meer automatisch op (bijvoorbeeld na het verplaatsen of
+hernoemen van de map), dan repareert `./fix-table-autostart.sh` dat. Het zoekt
+breed naar verwijzingen naar een `nuc-start.sh` die niet meer bestaat —
+autostart-entries, systemd-units, sessiebestanden (`~/.profile`,
+`~/.xsessionrc`, …), losse scriptjes in je home, symlinks en crontab — zet die
+op het huidige pad, en maakt zelf een autostart-entry aan als er helemaal geen
+blijkt te zijn. Ook hier: `--dry-run` om eerst te kijken, en niet met sudo.
+
 ---
 
 ## Het gaat stuk — waar begin je?
@@ -245,6 +255,7 @@ gebeuren: `./rename-project-folder.sh --dry-run`. Niet met sudo draaien.
 | Etalage-scherm toont de pagina, maar volgt de tafel niet | Poort **3001** is niet bereikbaar (firewall/netwerk). Test: `curl http://<tafel-ip>:3001` — dat moet `{"ok":true,...}` geven |
 | Animaties stotteren of knipperen | GPU-versnelling staat uit → [docs/NUC-SETUP.md](docs/NUC-SETUP.md) |
 | Tafel start niet op | Poort 3000 is al bezet (Vite gebruikt `strictPort`). Oplossen: `pkill -f "npm run dev"` en het script opnieuw starten |
+| Tafel start niet automatisch op na inloggen | De autostart verwijst naar een oud pad → `./fix-table-autostart.sh` |
 | Schermen staan uit de pas | Socket-server herstarten; beide pagina's halen daarna automatisch de nieuwe stand op |
 | Scherm valt in slaap / vergrendelt | Energiebeheer van Ubuntu: scherm uitschakelen op "Nooit", schermvergrendeling uit |
 | Kiosk-loop stopt niet | `pkill -f nuc-start.sh` of `pkill -f etalage-start.sh` (Alt+F4 sluit alleen Chromium; het script herstart hem) |
