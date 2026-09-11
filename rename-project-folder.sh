@@ -120,7 +120,21 @@ main() {
   [[ ! -d "$work_dir" ]] && work_dir="$repo_dir"
 
   # --- 3. Laatste versie ophalen -------------------------------------------
-  if [[ -n "$(git -C "$work_dir" status --porcelain 2>/dev/null)" ]]; then
+  # `npm install` op de NUC herschrijft package-lock.json (andere npm-versie
+  # voegt `peer`-markeringen toe en laat `libc`-velden weg). Dat zijn geen
+  # echte wijzigingen en ze blokkeren wél de pull, dus die gooien we weg. De
+  # lockfile uit git is dezelfde die hier gebruikt is; node_modules blijft
+  # ongemoeid.
+  local dirty lock_only=0
+  dirty="$(git -C "$work_dir" status --porcelain 2>/dev/null)"
+  if [[ "$dirty" == ' M package-lock.json' || "$dirty" == 'M  package-lock.json' ]]; then
+    lock_only=1
+    say "package-lock.json is lokaal gewijzigd door npm; terugzetten ..."
+    run git -C "$work_dir" checkout -- package-lock.json
+    dirty=''
+  fi
+
+  if [[ -n "$dirty" && "$lock_only" == 0 ]]; then
     say "LET OP: er staan lokale wijzigingen in de map; 'git pull' overgeslagen."
     say "        Handmatig: cd '$work_dir' && git status"
   elif ! git -C "$work_dir" remote get-url origin >/dev/null 2>&1; then
