@@ -245,6 +245,14 @@ autostart-entries, systemd-units, sessiebestanden (`~/.profile`,
 op het huidige pad, en maakt zelf een autostart-entry aan als er helemaal geen
 blijkt te zijn. Ook hier: `--dry-run` om eerst te kijken, en niet met sudo.
 
+Het script controleert ook of er niet *meer dan één* ding de kiosk start. Twee
+autostart-entries betekent twee `nuc-start.sh`-loops, en die schieten aan het
+begin van elke ronde elkaars Chromium af — dan opent en sluit het scherm
+eindeloos. De overtollige entries worden uitgezet (hernoemd naar
+`.disabled`, dus terug te zetten). `scripts/nuc-start.sh` weigert sinds die
+ervaring ook zelf om twee keer tegelijk te draaien, via een `flock`-slot op
+`/tmp/ixperium-nuc-start.lock`.
+
 ---
 
 ## Het gaat stuk — waar begin je?
@@ -256,6 +264,7 @@ blijkt te zijn. Ook hier: `--dry-run` om eerst te kijken, en niet met sudo.
 | Animaties stotteren of knipperen | GPU-versnelling staat uit → [docs/NUC-SETUP.md](docs/NUC-SETUP.md) |
 | Tafel start niet op | Poort 3000 is al bezet (Vite gebruikt `strictPort`). Oplossen: `pkill -f "npm run dev"` en het script opnieuw starten |
 | Tafel start niet automatisch op na inloggen | De autostart verwijst naar een oud pad → `./fix-table-autostart.sh` |
+| Het scherm opent en sluit steeds opnieuw | Twee autostart-entries starten elk een `nuc-start.sh`; die schieten elkaars Chromium af → `./fix-table-autostart.sh` ruimt de dubbele op |
 | Schermen staan uit de pas | Socket-server herstarten; beide pagina's halen daarna automatisch de nieuwe stand op |
 | Scherm valt in slaap / vergrendelt | Energiebeheer van Ubuntu: scherm uitschakelen op "Nooit", schermvergrendeling uit |
 | Kiosk-loop stopt niet | `pkill -f nuc-start.sh` of `pkill -f etalage-start.sh` (Alt+F4 sluit alleen Chromium; het script herstart hem) |

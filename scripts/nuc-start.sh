@@ -12,6 +12,19 @@
 
 REPO="${REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 URL="http://localhost:3000/"
+LOCK_FILE="/tmp/ixperium-nuc-start.lock"
+
+# Maar één instantie tegelijk. Draaien er twee (bv. twee autostart-entries),
+# dan schiet de ene loop de Chromium van de andere af met de pkill hieronder,
+# waarop die herstart: het scherm blijft dan openen en sluiten. Het slot wordt
+# vastgehouden zolang dit proces leeft en gaat bij afsluiten automatisch weg.
+if command -v flock >/dev/null 2>&1; then
+  exec 9>"$LOCK_FILE"
+  if ! flock -n 9; then
+    echo "nuc-start.sh draait al (slot: $LOCK_FILE); deze instantie stopt." >&2
+    exit 0
+  fi
+fi
 
 while true; do
   pkill -f "npm run dev" 2>/dev/null

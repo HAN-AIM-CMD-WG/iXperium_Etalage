@@ -183,13 +183,18 @@ main() {
 
   say "Verwijzingen: ${patched} bijgewerkt, ${ok_refs} al correct."
 
-  # --- 3. Is er nu een werkende autostart? --------------------------------
+  # --- 3. Hoeveel dingen starten de kiosk? --------------------------------
   # Bewust niet "er is iets gerepareerd, dus het werkt": een wrapper-script of
   # symlink in je home zegt nog niets over de autostart. We kijken alleen naar
-  # echte autostart-mechanismen.
-  if autostart_present; then
-    say "Er is een autostart-mechanisme dat de kiosk start."
-  else
+  # echte autostart-mechanismen — en net zo belangrijk: of het er niet MEER
+  # dan één zijn.
+  local sources=() line
+  while IFS= read -r line; do
+    [[ -n "$line" ]] && sources+=("$line")
+  done < <(collect_start_sources)
+
+  local count=${#sources[@]}
+  if [[ "$count" -eq 0 ]]; then
     say "Geen autostart gevonden die de kiosk start; er wordt een nieuwe aangemaakt."
     if [[ "$repo_dir" == *" "* ]]; then
       say "LET OP: het pad bevat een spatie; log-omleiding wordt overgeslagen."
@@ -197,6 +202,29 @@ main() {
     else
       run write_desktop "$desktop_file" "$start_script" "${HOME}/kiosk-tafel.log"
     fi
+  elif [[ "$count" -eq 1 ]]; then
+    say "Eén autostart gevonden: ${sources[0]#*:}"
+  else
+    say "LET OP: ${count} mechanismen starten de kiosk. Dat geeft precies het"
+    say "        symptoom 'het scherm opent en sluit steeds': elke nuc-start.sh"
+    say "        schiet aan het begin van zijn ronde de Chromium van de andere"
+    say "        af, waarop die herstart."
+
+    # Welke houden we? Voorkeur voor de entry die dit script zelf maakt.
+    local keeper='' source
+    for source in "${sources[@]}"; do
+      if [[ "$source" == "desktop:${desktop_file}" ]]; then
+        keeper="$source"
+        break
+      fi
+    done
+    [[ -z "$keeper" ]] && keeper="${sources[0]}"
+    say "Behouden: ${keeper#*:}"
+
+    for source in "${sources[@]}"; do
+      [[ "$source" == "$keeper" ]] && continue
+      disable_source "$source"
+    done
   fi
 
   # --- 4. Resultaat --------------------------------------------------------
@@ -230,37 +258,81 @@ main() {
   say "Blijft het scherm leeg na een reboot, kijk dan in: ${HOME}/kiosk-tafel.log"
 }
 
-# Is er een autostart-mechanisme dat (direct of via een wrapper) nuc-start.sh
-# aanroept? Alleen echte autostart-plekken tellen: .desktop-entries,
+# Start deze .desktop-entry de kiosk? Eén niveau indirectie is genoeg:
+# autostart -> wrapper-script -> nuc-start.sh.
+desktop_starts_kiosk() {
+  local file="$1" path
+  while IFS= read -r path; do
+    [[ -n "$path" && -f "$path" ]] || continue
+    [[ "$path" == *nuc-start.sh ]] && return 0
+    grep -qI --fixed-strings 'nuc-start.sh' "$path" 2>/dev/null && return 0
+  done < <(grep -h '^Exec=' "$file" 2>/dev/null | grep -ohE '/[^"'"'"' ]+' | sort -u)
+  return 1
+}
+
+# Alle mechanismen die de kiosk starten, één per regel, als `soort:pad`.
+# Alleen echte autostart-plekken tellen: .desktop-entries, ingeschakelde
 # systemd-units en crontab.
-autostart_present() {
-  local dir file path
+collect_start_sources() {
+  local dir file unit
 
   for dir in "$HOME/.config/autostart" /etc/xdg/autostart; do
     [[ -d "$dir" ]] || continue
     for file in "$dir"/*.desktop; do
       [[ -f "$file" ]] || continue
-      # Alle absolute paden uit de Exec-regel; één niveau indirectie is
-      # genoeg (autostart -> wrapper-script -> nuc-start.sh).
-      while IFS= read -r path; do
-        [[ -n "$path" && -f "$path" ]] || continue
-        [[ "$path" == *nuc-start.sh ]] && return 0
-        grep -qI --fixed-strings 'nuc-start.sh' "$path" 2>/dev/null && return 0
-      done < <(grep -h '^Exec=' "$file" 2>/dev/null |
-        grep -ohE '/[^"'"'"' ]+' | sort -u)
+      desktop_starts_kiosk "$file" && echo "desktop:$file"
     done
   done
 
   for dir in "$HOME/.config/systemd/user" /etc/systemd/system; do
     [[ -d "$dir" ]] || continue
-    grep -rIlq --fixed-strings 'nuc-start.sh' "$dir" 2>/dev/null && return 0
+    while IFS= read -r file; do
+      [[ -n "$file" ]] || continue
+      unit="$(basename "$file")"
+      # Een unit die niet is ingeschakeld start niets; die telt dus niet mee.
+      if [[ "$dir" == "$HOME/.config/systemd/user" ]]; then
+        systemctl --user is-enabled "$unit" >/dev/null 2>&1 || continue
+      else
+        systemctl is-enabled "$unit" >/dev/null 2>&1 || continue
+      fi
+      echo "unit:$file"
+    done < <(grep -rIl --fixed-strings 'nuc-start.sh' "$dir" 2>/dev/null)
   done
 
   if command -v crontab >/dev/null 2>&1; then
-    crontab -l 2>/dev/null | grep -q 'nuc-start.sh' && return 0
+    crontab -l 2>/dev/null | grep -q '^[^#].*nuc-start\.sh' && echo "crontab:"
   fi
+}
 
-  return 1
+# Zet een overtollig startmechanisme uit (met behoud van het origineel, zodat
+# je het kunt terugzetten).
+disable_source() {
+  local source="$1" kind path
+  kind="${source%%:*}"
+  path="${source#*:}"
+
+  case "$kind" in
+    desktop|unit)
+      if [[ -w "$path" && -w "$(dirname "$path")" ]]; then
+        say "Uitzetten: $path"
+        say "   terugzetten kan met: mv '${path}.disabled' '$path'"
+        run mv "$path" "${path}.disabled"
+      else
+        say "Kan $path niet uitzetten (geen rechten). Doe dit met sudo:"
+        echo "  sudo mv '$path' '${path}.disabled'"
+      fi
+      ;;
+    crontab)
+      say "Crontab-regels met nuc-start.sh uitcommentariëren ..."
+      if [[ "${dry_run:-0}" == 1 ]]; then
+        echo "[dry-run] crontab -l | sed 's|^\([^#].*nuc-start\.sh.*\)$|# \1|' | crontab -"
+      else
+        crontab -l 2>/dev/null > "$HOME/crontab.bak"
+        crontab -l 2>/dev/null | sed 's|^\([^#].*nuc-start\.sh.*\)$|# \1|' | crontab -
+        say "Oude crontab bewaard in ~/crontab.bak"
+      fi
+      ;;
+  esac
 }
 
 # via een tijdelijk bestand terug in het origineel, zodat rechten en eigendom
