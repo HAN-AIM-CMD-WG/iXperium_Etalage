@@ -1,4 +1,4 @@
-# iXperium Planet Concept
+# iXperium Etalage
 
 Interactieve tweeschermsopstelling voor **iXperium Smart Industry** (HAN).
 Bezoekers verkennen op een touchtafel een ring van "planeten" — elke planeet is
