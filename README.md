@@ -1,8 +1,8 @@
 # iXperium Planet Concept
 
-Interactieve tweeschermsopstelling voor het **iXperium Smart Industry** (HAN).
+Interactieve tweeschermsopstelling voor **iXperium Smart Industry** (HAN).
 Bezoekers verkennen op een touchtafel een ring van "planeten" — elke planeet is
-een kennisroute van het lectoraat. Tikken ze een onderwerp aan, dan verschijnt
+een kennisroute. Tikken ze een onderwerp aan, dan verschijnt
 de verdieping op een groot etalage-scherm ernaast.
 
 De tafel is dus de bediening, het grote scherm de uitzending.
